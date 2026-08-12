@@ -41,6 +41,7 @@ export default function Index() {
   }, []);
 
   const [selectedFilter, setSelectedFilter] = useState<ViewFilter>("today");
+  const [showRestrictedOnly, setShowRestrictedOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   
@@ -133,7 +134,7 @@ export default function Index() {
   const filteredGroups = useMemo(() => {
     return groups
       .filter((g) => {
-        // Filter by Search Query
+        // Search Query Filter
         if (searchQuery.trim()) {
           const query = searchQuery.toLowerCase();
           const matchName = g.name.toLowerCase().includes(query);
@@ -141,24 +142,42 @@ export default function Index() {
           if (!matchName && !matchNotes) return false;
         }
 
-        // Filter by Day
-        if (selectedFilter === "all") return true;
-        
-        const dayToCheck: DayOfWeek = selectedFilter === "today" ? todayDayName : selectedFilter;
-        return g.days[dayToCheck];
+        // Day Filter
+        if (selectedFilter !== "all") {
+          const dayToCheck: DayOfWeek = selectedFilter === "today" ? todayDayName : selectedFilter;
+          if (!g.days[dayToCheck]) return false;
+        }
+
+        // Filter: Show restricted schedule groups only (groups not allowed all 7 days)
+        const isEverydayGroup = Object.values(g.days).every(Boolean);
+        if (showRestrictedOnly && isEverydayGroup) {
+          return false;
+        }
+
+        return true;
       })
       .sort((a, b) => {
-        // Put groups with specific day rules / notes at top so tab changes are immediately noticeable
-        const aHasNotes = a.notes ? 1 : 0;
-        const bHasNotes = b.notes ? 1 : 0;
-        if (bHasNotes !== aHasNotes) return bHasNotes - aHasNotes;
-        
-        // Count how many total days allowed (fewer days = more restrictive = higher priority)
+        const aEveryday = Object.values(a.days).every(Boolean);
+        const bEveryday = Object.values(b.days).every(Boolean);
+
+        // DEFAULT: Show groups that DON'T allow everyday posting FIRST
+        if (aEveryday !== bEveryday) {
+          return aEveryday ? 1 : -1;
+        }
+
+        // Secondary: Groups with fewer allowed days come before groups with more days
         const aDaysCount = Object.values(a.days).filter(Boolean).length;
         const bDaysCount = Object.values(b.days).filter(Boolean).length;
-        return aDaysCount - bDaysCount;
+        if (aDaysCount !== bDaysCount) {
+          return aDaysCount - bDaysCount;
+        }
+
+        // Tertiary: Groups with custom notes/rules come first
+        const aHasNotes = a.notes ? 1 : 0;
+        const bHasNotes = b.notes ? 1 : 0;
+        return bHasNotes - aHasNotes;
       });
-  }, [groups, searchQuery, selectedFilter, todayDayName]);
+  }, [groups, searchQuery, selectedFilter, showRestrictedOnly, todayDayName]);
 
   // Active day group count
   const todayActiveCount = useMemo(() => {
@@ -290,16 +309,45 @@ export default function Index() {
         </button>
       </nav>
 
-      {/* Search Input Bar */}
-      <div className="search-container">
-        <Search size={18} className="search-icon" />
-        <input
-          type="text"
-          className="search-input"
-          placeholder="Search Facebook groups by name or rule..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+      {/* Search Input Bar & Restricted Filter Checkbox */}
+      <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "20px", flexWrap: "wrap" }}>
+        <div className="search-container" style={{ flex: 1, minWidth: "260px", marginBottom: 0 }}>
+          <Search size={18} className="search-icon" />
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Search Facebook groups by name or rule..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        <label 
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            background: showRestrictedOnly ? "rgba(59, 130, 246, 0.15)" : "var(--bg-card)",
+            border: showRestrictedOnly ? "1px solid var(--accent-primary)" : "1px solid var(--border-glass)",
+            color: showRestrictedOnly ? "#60a5fa" : "var(--text-secondary)",
+            padding: "12px 16px",
+            borderRadius: "var(--radius-md)",
+            cursor: "pointer",
+            fontSize: "0.875rem",
+            fontWeight: 500,
+            whiteSpace: "nowrap",
+            userSelect: "none",
+            transition: "all 0.2s ease"
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={showRestrictedOnly}
+            onChange={(e) => setShowRestrictedOnly(e.target.checked)}
+            style={{ accentColor: "var(--accent-primary)", width: "16px", height: "16px", cursor: "pointer" }}
+          />
+          <span>Restricted Schedule Groups Only</span>
+        </label>
       </div>
 
       {/* Facebook Groups Grid */}

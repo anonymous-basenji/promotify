@@ -489,6 +489,7 @@ const _index = UNSAFE_withComponentProps(function Index() {
     return DAYS_OF_WEEK[dayIndex];
   }, []);
   const [selectedFilter, setSelectedFilter] = useState("today");
+  const [showRestrictedOnly, setShowRestrictedOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [toastMessage, setToastMessage] = useState(null);
   const [editingGroup, setEditingGroup] = useState(null);
@@ -570,18 +571,31 @@ const _index = UNSAFE_withComponentProps(function Index() {
         const matchNotes = ((_a = g.notes) == null ? void 0 : _a.toLowerCase().includes(query)) || false;
         if (!matchName && !matchNotes) return false;
       }
-      if (selectedFilter === "all") return true;
-      const dayToCheck = selectedFilter === "today" ? todayDayName : selectedFilter;
-      return g.days[dayToCheck];
+      if (selectedFilter !== "all") {
+        const dayToCheck = selectedFilter === "today" ? todayDayName : selectedFilter;
+        if (!g.days[dayToCheck]) return false;
+      }
+      const isEverydayGroup = Object.values(g.days).every(Boolean);
+      if (showRestrictedOnly && isEverydayGroup) {
+        return false;
+      }
+      return true;
     }).sort((a, b) => {
-      const aHasNotes = a.notes ? 1 : 0;
-      const bHasNotes = b.notes ? 1 : 0;
-      if (bHasNotes !== aHasNotes) return bHasNotes - aHasNotes;
+      const aEveryday = Object.values(a.days).every(Boolean);
+      const bEveryday = Object.values(b.days).every(Boolean);
+      if (aEveryday !== bEveryday) {
+        return aEveryday ? 1 : -1;
+      }
       const aDaysCount = Object.values(a.days).filter(Boolean).length;
       const bDaysCount = Object.values(b.days).filter(Boolean).length;
-      return aDaysCount - bDaysCount;
+      if (aDaysCount !== bDaysCount) {
+        return aDaysCount - bDaysCount;
+      }
+      const aHasNotes = a.notes ? 1 : 0;
+      const bHasNotes = b.notes ? 1 : 0;
+      return bHasNotes - aHasNotes;
     });
-  }, [groups, searchQuery, selectedFilter, todayDayName]);
+  }, [groups, searchQuery, selectedFilter, showRestrictedOnly, todayDayName]);
   useMemo(() => {
     const checkDay = selectedFilter === "today" ? todayDayName : selectedFilter === "all" ? todayDayName : selectedFilter;
     return groups.filter((g) => g.days[checkDay]).length;
@@ -724,16 +738,60 @@ const _index = UNSAFE_withComponentProps(function Index() {
         children: ["All Groups (", groups.length, ")"]
       })]
     }), /* @__PURE__ */ jsxs("div", {
-      className: "search-container",
-      children: [/* @__PURE__ */ jsx(Search, {
-        size: 18,
-        className: "search-icon"
-      }), /* @__PURE__ */ jsx("input", {
-        type: "text",
-        className: "search-input",
-        placeholder: "Search Facebook groups by name or rule...",
-        value: searchQuery,
-        onChange: (e) => setSearchQuery(e.target.value)
+      style: {
+        display: "flex",
+        gap: "12px",
+        alignItems: "center",
+        marginBottom: "20px",
+        flexWrap: "wrap"
+      },
+      children: [/* @__PURE__ */ jsxs("div", {
+        className: "search-container",
+        style: {
+          flex: 1,
+          minWidth: "260px",
+          marginBottom: 0
+        },
+        children: [/* @__PURE__ */ jsx(Search, {
+          size: 18,
+          className: "search-icon"
+        }), /* @__PURE__ */ jsx("input", {
+          type: "text",
+          className: "search-input",
+          placeholder: "Search Facebook groups by name or rule...",
+          value: searchQuery,
+          onChange: (e) => setSearchQuery(e.target.value)
+        })]
+      }), /* @__PURE__ */ jsxs("label", {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          background: showRestrictedOnly ? "rgba(59, 130, 246, 0.15)" : "var(--bg-card)",
+          border: showRestrictedOnly ? "1px solid var(--accent-primary)" : "1px solid var(--border-glass)",
+          color: showRestrictedOnly ? "#60a5fa" : "var(--text-secondary)",
+          padding: "12px 16px",
+          borderRadius: "var(--radius-md)",
+          cursor: "pointer",
+          fontSize: "0.875rem",
+          fontWeight: 500,
+          whiteSpace: "nowrap",
+          userSelect: "none",
+          transition: "all 0.2s ease"
+        },
+        children: [/* @__PURE__ */ jsx("input", {
+          type: "checkbox",
+          checked: showRestrictedOnly,
+          onChange: (e) => setShowRestrictedOnly(e.target.checked),
+          style: {
+            accentColor: "var(--accent-primary)",
+            width: "16px",
+            height: "16px",
+            cursor: "pointer"
+          }
+        }), /* @__PURE__ */ jsx("span", {
+          children: "Restricted Schedule Groups Only"
+        })]
       })]
     }), filteredGroups.length === 0 ? /* @__PURE__ */ jsxs("div", {
       style: {
@@ -988,7 +1046,7 @@ const route1 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProper
   __proto__: null,
   default: _index
 }, Symbol.toStringTag, { value: "Module" }));
-const serverManifest = { "entry": { "module": "/assets/entry.client-215MQuG3.js", "imports": ["/assets/jsx-runtime-psaW7uDY.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/root-CIPfsi_a.js", "imports": ["/assets/jsx-runtime-psaW7uDY.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/_index": { "id": "routes/_index", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/_index-CRGdAMO0.js", "imports": ["/assets/jsx-runtime-psaW7uDY.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-f180f35d.js", "version": "f180f35d", "sri": void 0 };
+const serverManifest = { "entry": { "module": "/assets/entry.client-215MQuG3.js", "imports": ["/assets/jsx-runtime-psaW7uDY.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/root-CIPfsi_a.js", "imports": ["/assets/jsx-runtime-psaW7uDY.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/_index": { "id": "routes/_index", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/_index-KlZv2o0I.js", "imports": ["/assets/jsx-runtime-psaW7uDY.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-a7b3e3e2.js", "version": "a7b3e3e2", "sri": void 0 };
 const assetsBuildDirectory = "build\\client";
 const basename = "/";
 const future = { "unstable_optimizeDeps": false, "v8_passThroughRequests": false, "v8_trailingSlashAwareDataRequests": false, "unstable_previewServerPrerendering": false, "v8_middleware": false, "v8_splitRouteModules": false, "v8_viteEnvironmentApi": false };
