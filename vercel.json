@@ -1,5 +1,6 @@
 {
-  "buildCommand": "npx react-router build",
+  "installCommand": "npm install && chmod -R +x node_modules/.bin",
+  "buildCommand": "react-router build",
   "outputDirectory": "build/client",
   "framework": "vite"
 }
