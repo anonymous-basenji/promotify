@@ -14,20 +14,46 @@ type Pages = {
   "/": {
     params: {};
   };
+  "/login": {
+    params: {};
+  };
+  "/teams": {
+    params: {};
+  };
+  "/teams/:teamId": {
+    params: {
+      "teamId": string;
+    };
+  };
 };
 
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/";
+    page: "/" | "/login" | "/teams" | "/teams/:teamId";
   };
   "routes/_index.tsx": {
     id: "routes/_index";
     page: "/";
+  };
+  "routes/login.tsx": {
+    id: "routes/login";
+    page: "/login";
+  };
+  "routes/teams.tsx": {
+    id: "routes/teams";
+    page: "/teams";
+  };
+  "routes/teams.$teamId.tsx": {
+    id: "routes/teams.$teamId";
+    page: "/teams/:teamId";
   };
 };
 
 type RouteModules = {
   "root": typeof import("./app/root.tsx");
   "routes/_index": typeof import("./app/routes/_index.tsx");
+  "routes/login": typeof import("./app/routes/login.tsx");
+  "routes/teams": typeof import("./app/routes/teams.tsx");
+  "routes/teams.$teamId": typeof import("./app/routes/teams.$teamId.tsx");
 };
