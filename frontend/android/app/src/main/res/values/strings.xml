@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Promotify</string>
+    <string name="title_activity_main">Promotify</string>
+    <string name="package_name">com.promotify.app</string>
+    <string name="custom_url_scheme">com.promotify.app</string>
+</resources>
