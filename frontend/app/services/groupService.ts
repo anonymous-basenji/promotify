@@ -10,7 +10,7 @@ export interface CreateGroupInput {
 
 export const groupService = {
   async getTeamGroups(teamId: string): Promise<FacebookGroup[]> {
-    return await apiFetch<FacebookGroup[]>(`/api/groups/team/${teamId}`);
+    return await apiFetch<FacebookGroup[]>(`/api/teams/${teamId}/groups`);
   },
 
   async createGroup(
@@ -18,7 +18,7 @@ export const groupService = {
     _userId: string,
     input: CreateGroupInput
   ): Promise<FacebookGroup> {
-    return await apiFetch<FacebookGroup>(`/api/groups/team/${teamId}`, {
+    return await apiFetch<FacebookGroup>(`/api/teams/${teamId}/groups`, {
       method: 'POST',
       body: JSON.stringify(input),
     });

@@ -7,16 +7,16 @@ export const postService = {
     dateStr: string
   ): Promise<Record<string, PostLog>> {
     return await apiFetch<Record<string, PostLog>>(
-      `/api/posts/team/${teamId}/today?date=${encodeURIComponent(dateStr)}`
+      `/api/teams/${teamId}/posts/today?date=${encodeURIComponent(dateStr)}`
     );
   },
 
   async getTeamPostCounts(teamId: string): Promise<Record<string, number>> {
-    return await apiFetch<Record<string, number>>(`/api/posts/team/${teamId}/counts`);
+    return await apiFetch<Record<string, number>>(`/api/teams/${teamId}/posts/counts`);
   },
 
   async getGroupPostHistory(groupId: string): Promise<PostLog[]> {
-    return await apiFetch<PostLog[]>(`/api/posts/group/${groupId}/history`);
+    return await apiFetch<PostLog[]>(`/api/groups/${groupId}/history`);
   },
 
   async logPost(
@@ -27,7 +27,7 @@ export const postService = {
     notes?: string,
     postUrl?: string
   ): Promise<PostLog> {
-    return await apiFetch<PostLog>(`/api/posts/team/${teamId}`, {
+    return await apiFetch<PostLog>(`/api/teams/${teamId}/posts`, {
       method: 'POST',
       body: JSON.stringify({ groupId, dateStr, notes, postUrl }),
     });
