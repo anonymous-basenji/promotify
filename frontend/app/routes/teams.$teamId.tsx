@@ -126,10 +126,30 @@ export default function TeamDashboard() {
     }
   }, [user, teamId, loadDashboardData]);
 
-  const handleCopyPromoText = () => {
-    if (!promoText) return;
-    navigator.clipboard.writeText(promoText);
-    triggerToast('Promo text copied to clipboard! 📋');
+  const handleCopyPromoText = async () => {
+    if (!promoText || !promoText.trim()) {
+      triggerToast('No promo text set yet! Click "Edit Copy" to add one. ✏️');
+      return;
+    }
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(promoText);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = promoText;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      triggerToast('Promo text copied to clipboard! 📋');
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+      triggerToast('Could not copy text to clipboard.');
+    }
   };
 
   const handleSavePromoText = async () => {
@@ -308,7 +328,7 @@ export default function TeamDashboard() {
       : selectedFilter;
 
   const filteredGroups = useMemo(() => {
-    return groups.filter((group) => {
+    const list = groups.filter((group) => {
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
         const matchesName = group.name.toLowerCase().includes(query);
@@ -324,11 +344,20 @@ export default function TeamDashboard() {
         if (!allowsDay) return false;
       }
 
-      if (showRestrictedOnly && !group.notes) {
-        return false;
+      if (showRestrictedOnly) {
+        const isRestricted = group.allowed_days.length < 7 || Boolean(group.notes && group.notes.trim());
+        if (!isRestricted) return false;
       }
 
       return true;
+    });
+
+    return list.sort((a, b) => {
+      const aRestricted = a.allowed_days.length < 7 || Boolean(a.notes && a.notes.trim());
+      const bRestricted = b.allowed_days.length < 7 || Boolean(b.notes && b.notes.trim());
+      if (aRestricted && !bRestricted) return -1;
+      if (!aRestricted && bRestricted) return 1;
+      return a.name.localeCompare(b.name);
     });
   }, [groups, searchQuery, selectedFilter, activeDayName, showRestrictedOnly]);
 
@@ -518,7 +547,7 @@ export default function TeamDashboard() {
                   checked={showRestrictedOnly}
                   onChange={(e) => setShowRestrictedOnly(e.target.checked)}
                 />
-                <span>Notes Only</span>
+                <span>Restricted Only</span>
               </label>
 
               <button onClick={handleOpenAddGroupModal} className="btn-primary btn-sm add-group-btn">

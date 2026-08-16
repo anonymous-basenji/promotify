@@ -1,6 +1,7 @@
 {
-  "installCommand": "npm install && chmod -R +x node_modules/.bin",
-  "buildCommand": "react-router build",
-  "outputDirectory": "build/client",
+  "ignoreCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" != \"main\" ]; then exit 0; else exit 1; fi",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build --workspace=@promotify/frontend",
+  "outputDirectory": "frontend/build/client",
   "framework": "vite"
 }
