@@ -9,7 +9,9 @@ import {
   Sparkles, 
   Loader2, 
   AlertCircle,
-  X
+  X,
+  Edit3,
+  Trash2
 } from 'lucide-react';
 import { useAuth } from '~/context/AuthContext';
 import { apiFetch } from '~/lib/api';
@@ -30,6 +32,11 @@ export default function Teams() {
   const [teamDescription, setTeamDescription] = useState('');
   const [teamPromoText, setTeamPromoText] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   const [activeManagingTeam, setActiveManagingTeam] = useState<Team | null>(null);
 
@@ -85,6 +92,59 @@ export default function Teams() {
     } catch (err: unknown) {
       setErrorMsg((err as Error).message);
       setIsCreating(false);
+    }
+  };
+
+  const handleOpenEditModal = (team: Team) => {
+    setEditingTeam(team);
+    setEditName(team.name);
+    setEditDescription(team.description || '');
+    setErrorMsg(null);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTeam || !editName.trim()) return;
+
+    setIsSavingEdit(true);
+    setErrorMsg(null);
+
+    try {
+      const updated = await apiFetch<Team>(`/api/teams/${editingTeam.team_id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          name: editName,
+          description: editDescription,
+        }),
+      });
+
+      setTeams((prev) =>
+        prev.map((t) => (t.team_id === updated.team_id ? { ...t, ...updated } : t))
+      );
+      setEditingTeam(null);
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message);
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleDeleteTeam = async (team: Team) => {
+    if (
+      !confirm(
+        `Are you sure you want to permanently delete "${team.name}"? All Facebook groups, post history, and members will be removed.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await apiFetch<{ success: boolean }>(`/api/teams/${team.team_id}`, {
+        method: 'DELETE',
+      });
+      setTeams((prev) => prev.filter((t) => t.team_id !== team.team_id));
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message);
     }
   };
 
@@ -157,18 +217,40 @@ export default function Teams() {
                     <div className="team-card-icon">
                       <Layers size={22} />
                     </div>
-                    {team.user_role && (
-                      <span className={`role-badge role-${team.user_role}`}>
-                        {team.user_role === 'owner' ? (
-                          <>
-                            <ShieldCheck size={12} style={{ marginRight: '4px' }} />
-                            OWNER
-                          </>
-                        ) : (
-                          team.user_role.toUpperCase()
-                        )}
-                      </span>
-                    )}
+
+                    <div className="team-card-header-actions">
+                      {team.user_role && (
+                        <span className={`role-badge role-${team.user_role}`}>
+                          {team.user_role === 'owner' ? (
+                            <>
+                              <ShieldCheck size={12} style={{ marginRight: '4px' }} />
+                              OWNER
+                            </>
+                          ) : (
+                            team.user_role.toUpperCase()
+                          )}
+                        </span>
+                      )}
+
+                      {isAdmin && (
+                        <div className="team-card-admin-actions">
+                          <button
+                            onClick={() => handleOpenEditModal(team)}
+                            className="btn-icon"
+                            title="Edit workspace name & description"
+                          >
+                            <Edit3 size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTeam(team)}
+                            className="btn-icon btn-danger-soft"
+                            title="Delete workspace"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="team-card-body">
@@ -277,6 +359,77 @@ export default function Teams() {
                     </>
                   ) : (
                     <span>Create Team</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editingTeam && (
+        <div className="modal-backdrop" onClick={() => setEditingTeam(null)}>
+          <div className="modal-content modal-md" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Edit3 size={22} className="text-accent" />
+                <div>
+                  <h2 className="modal-title">Edit Team Workspace</h2>
+                  <p className="modal-subtitle">Update workspace name and description</p>
+                </div>
+              </div>
+              <button onClick={() => setEditingTeam(null)} className="btn-close">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit}>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label className="form-label">Team Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Ed's Lawn Services or Greek Festival 2026"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="input-field"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Description (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Social media promotion team for September sale"
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    className="input-field"
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  onClick={() => setEditingTeam(null)}
+                  className="btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingEdit || !editName.trim()}
+                  className="btn-primary"
+                >
+                  {isSavingEdit ? (
+                    <>
+                      <Loader2 size={16} className="spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save Changes</span>
                   )}
                 </button>
               </div>

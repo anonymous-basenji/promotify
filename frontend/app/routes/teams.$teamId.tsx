@@ -49,6 +49,10 @@ export default function TeamDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [editTeamName, setEditTeamName] = useState('');
+  const [editTeamDesc, setEditTeamDesc] = useState('');
+  const [isSavingTeam, setIsSavingTeam] = useState(false);
   const [historyDrawerGroup, setHistoryDrawerGroup] = useState<FacebookGroup | null>(null);
 
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
@@ -99,6 +103,8 @@ export default function TeamDashboard() {
         return;
       }
       setTeam(teamData);
+      setEditTeamName(teamData.name);
+      setEditTeamDesc(teamData.description || '');
       setPromoText(teamData.promo_text || '');
       setTempPromoText(teamData.promo_text || '');
 
@@ -259,6 +265,57 @@ export default function TeamDashboard() {
     }
   };
 
+  const handleOpenSettingsModal = () => {
+    if (!team) return;
+    setEditTeamName(team.name);
+    setEditTeamDesc(team.description || '');
+    setIsSettingsModalOpen(true);
+  };
+
+  const handleSaveTeamSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!teamId || !editTeamName.trim()) return;
+
+    setIsSavingTeam(true);
+    setErrorMsg(null);
+    try {
+      const updated = await apiFetch<Team>(`/api/teams/${teamId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          name: editTeamName,
+          description: editTeamDesc,
+        }),
+      });
+      setTeam((prev) => (prev ? { ...prev, ...updated } : prev));
+      setIsSettingsModalOpen(false);
+      triggerToast('Team workspace updated! ✨');
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message);
+    } finally {
+      setIsSavingTeam(false);
+    }
+  };
+
+  const handleDeleteTeamFromDashboard = async () => {
+    if (!team) return;
+    if (
+      !confirm(
+        `Are you sure you want to permanently delete workspace "${team.name}"? All Facebook groups, post logs, and members will be removed.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await apiFetch<{ success: boolean }>(`/api/teams/${team.team_id}`, {
+        method: 'DELETE',
+      });
+      navigate('/teams', { replace: true });
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message);
+    }
+  };
+
   const handleDeleteGroup = async (groupId: string, groupName: string) => {
     if (!confirm(`Are you sure you want to delete "${groupName}" from this team?`)) {
       return;
@@ -409,6 +466,7 @@ export default function TeamDashboard() {
       <HeaderBar
         currentTeam={team}
         onOpenMembersModal={() => setIsMembersModalOpen(true)}
+        onOpenSettingsModal={handleOpenSettingsModal}
       />
 
       {toastMessage && (
@@ -699,35 +757,37 @@ export default function TeamDashboard() {
                     </div>
 
                     <div className="group-actions-col">
-                      {isPostedToday ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <button
-                            onClick={() => handleUnmarkPosted(group.facebook_group_id)}
-                            className="btn-undo-post"
-                            title="Undo last logged post for today (LIFO)"
-                          >
-                            <Undo size={14} />
-                            <span>Undo</span>
-                          </button>
+                      <div className="group-post-actions">
+                        {isPostedToday ? (
+                          <>
+                            <button
+                              onClick={() => handleUnmarkPosted(group.facebook_group_id)}
+                              className="btn-undo-post"
+                              title="Undo last logged post for today (LIFO)"
+                            >
+                              <Undo size={14} />
+                              <span>Undo</span>
+                            </button>
+                            <button
+                              onClick={() => handleMarkPosted(group.facebook_group_id)}
+                              className="btn-mark-posted btn-mark-posted-again"
+                              title="Log another post for this group today"
+                            >
+                              <Plus size={14} />
+                              <span>Post Again</span>
+                            </button>
+                          </>
+                        ) : (
                           <button
                             onClick={() => handleMarkPosted(group.facebook_group_id)}
-                            className="btn-mark-posted btn-mark-posted-again"
-                            title="Log another post for this group today"
+                            className="btn-mark-posted"
+                            title="Mark this group as posted for today"
                           >
-                            <Plus size={14} />
-                            <span>Post Again</span>
+                            <Check size={16} />
+                            <span>Mark Posted</span>
                           </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => handleMarkPosted(group.facebook_group_id)}
-                          className="btn-mark-posted"
-                          title="Mark this group as posted for today"
-                        >
-                          <Check size={16} />
-                          <span>Mark Posted</span>
-                        </button>
-                      )}
+                        )}
+                      </div>
 
                       <div className="group-manage-btns">
                         <button
@@ -878,6 +938,95 @@ export default function TeamDashboard() {
           onClose={() => setHistoryDrawerGroup(null)}
           onPostDeleted={() => loadDashboardData()}
         />
+      )}
+
+      {isSettingsModalOpen && (
+        <div className="modal-backdrop" onClick={() => setIsSettingsModalOpen(false)}>
+          <div className="modal-content modal-md" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Edit3 size={22} className="text-accent" />
+                <div>
+                  <h2 className="modal-title">Team Workspace Settings</h2>
+                  <p className="modal-subtitle">Manage workspace details and preferences</p>
+                </div>
+              </div>
+              <button onClick={() => setIsSettingsModalOpen(false)} className="btn-close">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveTeamSettings}>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label className="form-label">Team Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Greek Festival 2026"
+                    value={editTeamName}
+                    onChange={(e) => setEditTeamName(e.target.value)}
+                    className="input-field"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Description (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Social media promotion team for festival"
+                    value={editTeamDesc}
+                    onChange={(e) => setEditTeamDesc(e.target.value)}
+                    className="input-field"
+                  />
+                </div>
+
+                <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-glass)' }}>
+                  <h4 style={{ color: 'var(--accent-rose)', fontSize: '0.9rem', marginBottom: '6px' }}>
+                    Danger Zone
+                  </h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '12px' }}>
+                    Permanently delete this workspace, including all groups, member associations, and post logs.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleDeleteTeamFromDashboard}
+                    className="btn-secondary"
+                    style={{ color: 'var(--accent-rose)', borderColor: 'rgba(244, 63, 94, 0.3)' }}
+                  >
+                    <Trash2 size={14} style={{ marginRight: '6px' }} />
+                    <span>Delete Workspace</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  onClick={() => setIsSettingsModalOpen(false)}
+                  className="btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingTeam || !editTeamName.trim()}
+                  className="btn-primary"
+                >
+                  {isSavingTeam ? (
+                    <>
+                      <Loader2 size={16} className="spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save Changes</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -43,6 +43,35 @@ export const teamController = {
     }
   },
 
+  async updateTeam(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const teamId = req.params.teamId as string;
+      const { name, description } = req.body;
+      const userId = req.user!.user_id;
+      const updated = await teamService.updateTeam(
+        teamId,
+        { name, description },
+        userId
+      );
+      res.json(updated);
+    } catch (err: unknown) {
+      const status = (err as { status?: number }).status || 500;
+      res.status(status).json({ error: (err as Error).message });
+    }
+  },
+
+  async deleteTeam(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const teamId = req.params.teamId as string;
+      const userId = req.user!.user_id;
+      await teamService.deleteTeam(teamId, userId);
+      res.json({ success: true });
+    } catch (err: unknown) {
+      const status = (err as { status?: number }).status || 500;
+      res.status(status).json({ error: (err as Error).message });
+    }
+  },
+
   async updatePromo(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const teamId = req.params.teamId as string;

@@ -55,6 +55,42 @@ export const teamService = {
     };
   },
 
+  async updateTeam(
+    teamId: string,
+    data: { name?: string; description?: string | null },
+    userId: string
+  ): Promise<Team> {
+    const role = await teamRepository.getMemberRole(teamId, userId);
+    if (role !== 'owner' && role !== 'admin') {
+      const err = new Error('Only team admins can edit workspace details');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    if (data.name !== undefined && !data.name.trim()) {
+      const err = new Error('Team name cannot be empty');
+      (err as unknown as { status: number }).status = 400;
+      throw err;
+    }
+
+    const updated = await teamRepository.update(teamId, data);
+    return {
+      ...updated,
+      user_role: role,
+    };
+  },
+
+  async deleteTeam(teamId: string, userId: string): Promise<void> {
+    const role = await teamRepository.getMemberRole(teamId, userId);
+    if (role !== 'owner' && role !== 'admin') {
+      const err = new Error('Only team admins can delete this workspace');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    await teamRepository.delete(teamId);
+  },
+
   async updatePromoText(
     teamId: string,
     promoText: string,

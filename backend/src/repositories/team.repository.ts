@@ -75,6 +75,49 @@ export const teamRepository = {
     return data as Team;
   },
 
+  async update(
+    teamId: string,
+    data: { name?: string; description?: string | null; promo_text?: string }
+  ): Promise<Team> {
+    const updatePayload: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (data.name !== undefined) updatePayload.name = data.name.trim();
+    if (data.description !== undefined) {
+      updatePayload.description = data.description?.trim() || null;
+    }
+    if (data.promo_text !== undefined) updatePayload.promo_text = data.promo_text;
+
+    const { data: updated, error } = await supabaseAdmin
+      .from('teams')
+      .update(updatePayload)
+      .eq('team_id', teamId)
+      .select()
+      .single();
+
+    if (error || !updated) {
+      console.error('Error updating team:', error);
+      throw new Error(error?.message || 'Failed to update team');
+    }
+    return updated as Team;
+  },
+
+  async delete(teamId: string): Promise<void> {
+    await supabaseAdmin.from('post_logs').delete().eq('team_id', teamId);
+    await supabaseAdmin.from('facebook_groups').delete().eq('team_id', teamId);
+    await supabaseAdmin.from('team_members').delete().eq('team_id', teamId);
+
+    const { error } = await supabaseAdmin
+      .from('teams')
+      .delete()
+      .eq('team_id', teamId);
+
+    if (error) {
+      console.error('Error deleting team:', error);
+      throw new Error(error.message);
+    }
+  },
+
   async updatePromoText(teamId: string, promoText: string): Promise<void> {
     const { error } = await supabaseAdmin
       .from('teams')
