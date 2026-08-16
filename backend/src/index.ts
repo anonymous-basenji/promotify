@@ -12,7 +12,7 @@ if (typeof import.meta.dirname === 'string') {
 }
 
 const app = express();
-const PORT = process.env.BACKEND_PORT || process.env.PORT || 3000;
+const PORT = process.env.BACKEND_PORT || 3000;
 
 app.use(
   cors({
