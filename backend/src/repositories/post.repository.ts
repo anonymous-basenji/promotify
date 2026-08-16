@@ -5,12 +5,13 @@ export const postRepository = {
   async findTodayByTeam(
     teamId: string,
     dateStr: string
-  ): Promise<Record<string, PostLog>> {
+  ): Promise<Record<string, PostLog[]>> {
     const { data: postRows, error: postError } = await supabaseAdmin
       .from('post_logs')
       .select('*')
       .eq('team_id', teamId)
-      .eq('posted_date', dateStr);
+      .eq('posted_date', dateStr)
+      .order('created_at', { ascending: false });
 
     if (postError) {
       console.error('Error fetching today posts:', postError);
@@ -35,9 +36,12 @@ export const postRepository = {
       });
     }
 
-    const map: Record<string, PostLog> = {};
+    const map: Record<string, PostLog[]> = {};
     postRows.forEach((row) => {
-      map[row.facebook_group_id] = {
+      if (!map[row.facebook_group_id]) {
+        map[row.facebook_group_id] = [];
+      }
+      map[row.facebook_group_id].push({
         post_log_id: row.post_log_id,
         facebook_group_id: row.facebook_group_id,
         team_id: row.team_id,
@@ -47,7 +51,7 @@ export const postRepository = {
         notes: row.notes,
         created_at: row.created_at,
         poster_profile: row.user_id ? profileMap[row.user_id] : undefined,
-      };
+      });
     });
 
     return map;

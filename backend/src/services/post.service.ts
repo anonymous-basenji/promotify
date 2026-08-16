@@ -8,7 +8,7 @@ export const postService = {
     teamId: string,
     dateStr: string,
     userId: string
-  ): Promise<Record<string, PostLog>> {
+  ): Promise<Record<string, PostLog[]>> {
     const role = await teamRepository.getMemberRole(teamId, userId);
     if (!role) {
       const err = new Error('You are not a member of this team');

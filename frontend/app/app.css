@@ -958,15 +958,24 @@ html, body {
   background: rgba(244, 63, 94, 0.12);
   border: 1px solid rgba(244, 63, 94, 0.3);
   color: var(--accent-rose);
-  padding: 8px 14px;
+  padding: 8px 12px;
   border-radius: var(--radius-md);
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.825rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 6px;
   white-space: nowrap;
+}
+
+.btn-undo-post:hover {
+  background: rgba(244, 63, 94, 0.22);
+}
+
+.btn-mark-posted-again {
+  padding: 8px 12px;
+  font-size: 0.825rem;
 }
 
 .group-manage-btns {

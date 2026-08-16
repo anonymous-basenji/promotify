@@ -33,7 +33,7 @@ export default function TeamDashboard() {
 
   const [team, setTeam] = useState<Team | null>(null);
   const [groups, setGroups] = useState<FacebookGroup[]>([]);
-  const [todayPosts, setTodayPosts] = useState<Record<string, PostLog>>({});
+  const [todayPosts, setTodayPosts] = useState<Record<string, PostLog[]>>({});
   const [postCounts, setPostCounts] = useState<Record<string, number>>({});
   const [promoText, setPromoText] = useState('');
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
@@ -104,7 +104,7 @@ export default function TeamDashboard() {
 
       const [groupData, todayLogs, counts] = await Promise.all([
         apiFetch<FacebookGroup[]>(`/api/teams/${teamId}/groups`),
-        apiFetch<Record<string, PostLog>>(
+        apiFetch<Record<string, PostLog[]>>(
           `/api/teams/${teamId}/posts/today?date=${encodeURIComponent(todayStr)}`
         ),
         apiFetch<Record<string, number>>(`/api/teams/${teamId}/posts/counts`),
@@ -285,7 +285,7 @@ export default function TeamDashboard() {
       });
       setTodayPosts((prev) => ({
         ...prev,
-        [groupId]: newLog,
+        [groupId]: [newLog, ...(prev[groupId] || [])],
       }));
       setPostCounts((prev) => ({
         ...prev,
@@ -298,23 +298,29 @@ export default function TeamDashboard() {
   };
 
   const handleUnmarkPosted = async (groupId: string) => {
-    const postLog = todayPosts[groupId];
-    if (!postLog) return;
+    const logs = todayPosts[groupId];
+    if (!logs || logs.length === 0) return;
 
+    const latestLog = logs[0];
     try {
-      await apiFetch<{ success: boolean }>(`/api/posts/${postLog.post_log_id}`, {
+      await apiFetch<{ success: boolean }>(`/api/posts/${latestLog.post_log_id}`, {
         method: 'DELETE',
       });
       setTodayPosts((prev) => {
+        const groupLogs = (prev[groupId] || []).slice(1);
         const next = { ...prev };
-        delete next[groupId];
+        if (groupLogs.length > 0) {
+          next[groupId] = groupLogs;
+        } else {
+          delete next[groupId];
+        }
         return next;
       });
       setPostCounts((prev) => ({
         ...prev,
         [groupId]: Math.max(0, (prev[groupId] || 1) - 1),
       }));
-      triggerToast('Post unmarked.');
+      triggerToast('Last post unmarked. ↩');
     } catch (err: unknown) {
       setErrorMsg((err as Error).message);
     }
@@ -363,7 +369,7 @@ export default function TeamDashboard() {
 
   const stats = useMemo(() => {
     const activeDayGroups = groups.filter((g) => g.allowed_days.includes(activeDayName));
-    const postedCount = activeDayGroups.filter((g) => !!todayPosts[g.facebook_group_id]).length;
+    const postedCount = activeDayGroups.filter((g) => (todayPosts[g.facebook_group_id] || []).length > 0).length;
     const totalCount = activeDayGroups.length;
     const progressPercent = totalCount > 0 ? Math.round((postedCount / totalCount) * 100) : 0;
 
@@ -603,19 +609,20 @@ export default function TeamDashboard() {
           ) : (
             <div className="groups-list">
               {filteredGroups.map((group) => {
-                const todayLog = todayPosts[group.facebook_group_id];
-                const isPostedToday = !!todayLog;
+                const groupTodayLogs = todayPosts[group.facebook_group_id] || [];
+                const isPostedToday = groupTodayLogs.length > 0;
+                const latestLog = groupTodayLogs[0] || null;
                 const totalGroupPosts = postCounts[group.facebook_group_id] || 0;
                 const creatorName =
                   group.creator_profile?.full_name ||
                   group.creator_profile?.email?.split('@')[0] ||
                   'Team';
-                const posterName =
-                  todayLog?.poster_profile?.full_name ||
-                  todayLog?.poster_profile?.email?.split('@')[0] ||
+                const latestPosterName =
+                  latestLog?.poster_profile?.full_name ||
+                  latestLog?.poster_profile?.email?.split('@')[0] ||
                   'Team Member';
-                const postedTime = todayLog
-                  ? new Date(todayLog.created_at).toLocaleTimeString([], {
+                const latestPostedTime = latestLog
+                  ? new Date(latestLog.created_at).toLocaleTimeString([], {
                       hour: '2-digit',
                       minute: '2-digit',
                     })
@@ -683,7 +690,9 @@ export default function TeamDashboard() {
                         <div className="posted-status-badge">
                           <Check size={14} />
                           <span>
-                            Posted today by {posterName} at {postedTime}
+                            {groupTodayLogs.length === 1
+                              ? `Posted today by ${latestPosterName} at ${latestPostedTime}`
+                              : `Posted ${groupTodayLogs.length}x today (latest by ${latestPosterName} at ${latestPostedTime})`}
                           </span>
                         </div>
                       )}
@@ -691,14 +700,24 @@ export default function TeamDashboard() {
 
                     <div className="group-actions-col">
                       {isPostedToday ? (
-                        <button
-                          onClick={() => handleUnmarkPosted(group.facebook_group_id)}
-                          className="btn-undo-post"
-                          title="Undo today's post record"
-                        >
-                          <Undo size={14} />
-                          <span>Undo</span>
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <button
+                            onClick={() => handleUnmarkPosted(group.facebook_group_id)}
+                            className="btn-undo-post"
+                            title="Undo last logged post for today (LIFO)"
+                          >
+                            <Undo size={14} />
+                            <span>Undo</span>
+                          </button>
+                          <button
+                            onClick={() => handleMarkPosted(group.facebook_group_id)}
+                            className="btn-mark-posted btn-mark-posted-again"
+                            title="Log another post for this group today"
+                          >
+                            <Plus size={14} />
+                            <span>Post Again</span>
+                          </button>
+                        </div>
                       ) : (
                         <button
                           onClick={() => handleMarkPosted(group.facebook_group_id)}
