@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '~/context/AuthContext';
 import type { Team } from '~/types/promotify';
+import './HeaderBar.css';
 
 interface HeaderBarProps {
   currentTeam?: Team | null;

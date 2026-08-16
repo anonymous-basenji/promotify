@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { X, History, ExternalLink, Trash2, Calendar, Clock, Loader2, MessageSquare } from 'lucide-react';
 import { apiFetch } from '~/lib/api';
 import type { FacebookGroup, PostLog } from '~/types/promotify';
+import './PostHistoryDrawer.css';
 
 interface PostHistoryDrawerProps {
   group: FacebookGroup | null;

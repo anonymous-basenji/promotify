@@ -3,6 +3,7 @@ import { X, UserPlus, Shield, ShieldCheck, UserCheck, Trash2, Loader2, AlertCirc
 import { apiFetch } from '~/lib/api';
 import type { TeamMember, TeamRole } from '~/types/promotify';
 import { useAuth } from '~/context/AuthContext';
+import './TeamMembersModal.css';
 
 interface TeamMembersModalProps {
   teamId: string;

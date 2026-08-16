@@ -25,6 +25,7 @@ import { DAYS_OF_WEEK } from '~/types/promotify';
 import { HeaderBar } from '~/components/HeaderBar';
 import { TeamMembersModal } from '~/components/TeamMembersModal';
 import { PostHistoryDrawer } from '~/components/PostHistoryDrawer';
+import './teams.$teamId.css';
 
 export default function TeamDashboard() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -436,7 +437,7 @@ export default function TeamDashboard() {
   if (isAuthLoading || (isLoadingDashboard && !team)) {
     return (
       <div className="app-container">
-        <div className="login-viewport">
+        <div className="page-loading-state">
           <Loader2 size={36} className="spin text-accent" />
           <p style={{ marginTop: '12px', color: 'var(--text-secondary)' }}>
             Loading team dashboard...

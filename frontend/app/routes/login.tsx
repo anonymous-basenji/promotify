@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Sparkles, Loader2, AlertCircle, ArrowRight } from 'lucide-react';
 import { useAuth } from '~/context/AuthContext';
+import './login.css';
 
 export default function Login() {
   const { user, isLoading, signInWithGoogle } = useAuth();

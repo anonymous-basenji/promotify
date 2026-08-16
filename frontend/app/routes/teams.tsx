@@ -18,6 +18,7 @@ import { apiFetch } from '~/lib/api';
 import type { Team } from '~/types/promotify';
 import { HeaderBar } from '~/components/HeaderBar';
 import { TeamMembersModal } from '~/components/TeamMembersModal';
+import './teams.css';
 
 export default function Teams() {
   const { user, isLoading: isAuthLoading } = useAuth();
@@ -151,7 +152,7 @@ export default function Teams() {
   if (isAuthLoading || (isLoadingTeams && teams.length === 0)) {
     return (
       <div className="app-container">
-        <div className="login-viewport">
+        <div className="page-loading-state">
           <Loader2 size={36} className="spin text-accent" />
           <p style={{ marginTop: '12px', color: 'var(--text-secondary)' }}>Loading workspaces...</p>
         </div>
