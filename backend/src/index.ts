@@ -25,13 +25,13 @@ app.use(
 
 app.use(express.json());
 
-app.get('/api/health', (_req, res) => {
+app.get(['/api/health', '/health'], (_req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
-app.use('/api/teams', teamRoutes);
-app.use('/api/groups', groupRoutes);
-app.use('/api/posts', postRoutes);
+app.use(['/api/teams', '/teams'], teamRoutes);
+app.use(['/api/groups', '/groups'], groupRoutes);
+app.use(['/api/posts', '/posts'], postRoutes);
 
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
