@@ -53,6 +53,10 @@
   margin-top: 2px;
 }
 
+.dashboard-content {
+  padding-bottom: 24px;
+}
+
 .promo-text-card {
   background: var(--bg-card);
   backdrop-filter: blur(16px);

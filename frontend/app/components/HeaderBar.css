@@ -53,36 +53,6 @@
   color: var(--text-secondary);
 }
 
-.team-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.breadcrumb-separator {
-  color: var(--text-muted);
-}
-
-.breadcrumb-team-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-glass);
-  padding: 6px 12px;
-  border-radius: 9999px;
-  color: var(--text-primary);
-  text-decoration: none;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-
-.breadcrumb-team-pill:hover {
-  background: var(--bg-card-hover);
-  border-color: var(--border-glass-accent);
-}
-
 .header-actions {
   display: flex;
   align-items: center;
@@ -295,10 +265,5 @@
 
   .brand-title {
     font-size: 1.15rem !important;
-  }
-
-  .breadcrumb-team-pill {
-    padding: 4px 10px !important;
-    font-size: 0.775rem !important;
   }
 }

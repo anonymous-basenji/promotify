@@ -4,11 +4,10 @@ import {
   Sparkles, 
   LogOut, 
   Users, 
-  ChevronRight, 
   Layers, 
-  Settings,
-  Menu,
-  X
+  Settings, 
+  Menu, 
+  X 
 } from 'lucide-react';
 import { useAuth } from '~/context/AuthContext';
 import type { Team } from '~/types/promotify';
@@ -55,21 +54,6 @@ export function HeaderBar({
             <p className="brand-subtitle">Team Promotional Distribution Matrix</p>
           </div>
         </Link>
-
-        {currentTeam && (
-          <div className="team-breadcrumb">
-            <ChevronRight size={16} className="breadcrumb-separator" />
-            <Link to="/teams" className="breadcrumb-team-pill" title="Switch Team">
-              <Layers size={14} />
-              <span className="breadcrumb-team-name">{currentTeam.name}</span>
-            </Link>
-            {currentTeam.user_role && (
-              <span className={`role-badge role-${currentTeam.user_role}`}>
-                {currentTeam.user_role.toUpperCase()}
-              </span>
-            )}
-          </div>
-        )}
       </div>
 
       <div className="header-actions header-actions-desktop">
