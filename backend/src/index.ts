@@ -33,8 +33,10 @@ app.use('/api/teams', teamRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/posts', postRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Promotify One Backend running on http://localhost:${PORT}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Promotify One Backend running on http://localhost:${PORT}`);
+  });
+}
 
 export default app;
