@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, UserPlus, Shield, ShieldCheck, UserCheck, Trash2, Loader2, AlertCircle } from 'lucide-react';
-import { teamService } from '~/services/teamService';
+import { apiFetch } from '~/lib/api';
 import type { TeamMember, TeamRole } from '~/types/promotify';
 import { useAuth } from '~/context/AuthContext';
 
@@ -25,7 +25,6 @@ export function TeamMembersModal({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Invite state
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<TeamRole>('member');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,7 +35,7 @@ export function TeamMembersModal({
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      const data = await teamService.getTeamMembers(teamId);
+      const data = await apiFetch<TeamMember[]>(`/api/teams/${teamId}/members`);
       setMembers(data);
     } catch (err: unknown) {
       setErrorMsg((err as Error).message || 'Failed to load team members');
@@ -60,7 +59,10 @@ export function TeamMembersModal({
     setSuccessMsg(null);
 
     try {
-      await teamService.addTeamMemberByEmail(teamId, inviteEmail, inviteRole);
+      await apiFetch<TeamMember>(`/api/teams/${teamId}/members`, {
+        method: 'POST',
+        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
+      });
       setInviteEmail('');
       setSuccessMsg(`Added ${inviteEmail} to ${teamName}!`);
       await loadMembers();
@@ -74,7 +76,13 @@ export function TeamMembersModal({
 
   const handleRoleChange = async (member: TeamMember, newRole: TeamRole) => {
     try {
-      await teamService.updateMemberRole(member.team_member_id, newRole);
+      await apiFetch<{ success: boolean }>(
+        `/api/teams/${teamId}/members/${member.team_member_id}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ role: newRole }),
+        }
+      );
       setMembers((prev) =>
         prev.map((m) =>
           m.team_member_id === member.team_member_id ? { ...m, role: newRole } : m
@@ -92,7 +100,12 @@ export function TeamMembersModal({
     }
 
     try {
-      await teamService.removeMember(member.team_member_id);
+      await apiFetch<{ success: boolean }>(
+        `/api/teams/${teamId}/members/${member.team_member_id}`,
+        {
+          method: 'DELETE',
+        }
+      );
       setMembers((prev) => prev.filter((m) => m.team_member_id !== member.team_member_id));
     } catch (err: unknown) {
       setErrorMsg((err as Error).message);
@@ -108,8 +121,8 @@ export function TeamMembersModal({
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <ShieldCheck size={22} className="text-accent" />
             <div>
-              <h2 className="modal-title">Team Roster & Admins</h2>
-              <p className="modal-subtitle">{teamName}</p>
+              <h2 className="modal-title">{teamName}</h2>
+              <p className="modal-subtitle">Team Roster & Admins</p>
             </div>
           </div>
           <button onClick={onClose} className="btn-close">

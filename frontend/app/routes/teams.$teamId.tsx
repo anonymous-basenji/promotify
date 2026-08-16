@@ -19,9 +19,7 @@ import {
   Save,
 } from 'lucide-react';
 import { useAuth } from '~/context/AuthContext';
-import { teamService } from '~/services/teamService';
-import { groupService } from '~/services/groupService';
-import { postService } from '~/services/postService';
+import { apiFetch } from '~/lib/api';
 import type { DayOfWeek, FacebookGroup, PostLog, Team, ViewFilter } from '~/types/promotify';
 import { DAYS_OF_WEEK } from '~/types/promotify';
 import { HeaderBar } from '~/components/HeaderBar';
@@ -94,7 +92,7 @@ export default function TeamDashboard() {
     setErrorMsg(null);
 
     try {
-      const teamData = await teamService.getTeamById(teamId, user.id);
+      const teamData = await apiFetch<Team>(`/api/teams/${teamId}`);
       if (!teamData) {
         setErrorMsg('Team workspace not found or you do not have permission to view it.');
         setIsLoadingDashboard(false);
@@ -104,13 +102,15 @@ export default function TeamDashboard() {
       setPromoText(teamData.promo_text || '');
       setTempPromoText(teamData.promo_text || '');
 
-      const groupData = await groupService.getTeamGroups(teamId);
-      setGroups(groupData);
-
-      const [todayLogs, counts] = await Promise.all([
-        postService.getTeamPostLogsToday(teamId, todayStr),
-        postService.getTeamPostCounts(teamId),
+      const [groupData, todayLogs, counts] = await Promise.all([
+        apiFetch<FacebookGroup[]>(`/api/teams/${teamId}/groups`),
+        apiFetch<Record<string, PostLog>>(
+          `/api/teams/${teamId}/posts/today?date=${encodeURIComponent(todayStr)}`
+        ),
+        apiFetch<Record<string, number>>(`/api/teams/${teamId}/posts/counts`),
       ]);
+
+      setGroups(groupData);
       setTodayPosts(todayLogs);
       setPostCounts(counts);
     } catch (err: unknown) {
@@ -136,7 +136,10 @@ export default function TeamDashboard() {
     if (!teamId) return;
     setIsSavingPromo(true);
     try {
-      await teamService.updateTeamPromoText(teamId, tempPromoText);
+      await apiFetch<{ success: boolean }>(`/api/teams/${teamId}/promo`, {
+        method: 'PATCH',
+        body: JSON.stringify({ promoText: tempPromoText }),
+      });
       setPromoText(tempPromoText);
       setIsEditingPromo(false);
       triggerToast('Promo text updated! 💾');
@@ -198,25 +201,36 @@ export default function TeamDashboard() {
 
     try {
       if (editingGroup) {
-        await groupService.updateGroup(editingGroup.facebook_group_id, {
-          name: formName,
-          group_url: formUrl,
-          notes: formNotes,
-          allowed_days: selectedAllowedDays,
-        });
+        await apiFetch<{ success: boolean }>(
+          `/api/groups/${editingGroup.facebook_group_id}`,
+          {
+            method: 'PUT',
+            body: JSON.stringify({
+              name: formName,
+              group_url: formUrl,
+              notes: formNotes,
+              allowed_days: selectedAllowedDays,
+            }),
+          }
+        );
         triggerToast('Group updated! ✨');
       } else {
-        await groupService.createGroup(teamId, user.id, {
-          name: formName,
-          group_url: formUrl,
-          notes: formNotes,
-          allowed_days: selectedAllowedDays,
+        await apiFetch<FacebookGroup>(`/api/teams/${teamId}/groups`, {
+          method: 'POST',
+          body: JSON.stringify({
+            name: formName,
+            group_url: formUrl,
+            notes: formNotes,
+            allowed_days: selectedAllowedDays,
+          }),
         });
         triggerToast('Group added to team! 🚀');
       }
 
       setIsGroupModalOpen(false);
-      const updatedGroups = await groupService.getTeamGroups(teamId);
+      const updatedGroups = await apiFetch<FacebookGroup[]>(
+        `/api/teams/${teamId}/groups`
+      );
       setGroups(updatedGroups);
     } catch (err: unknown) {
       setErrorMsg((err as Error).message);
@@ -231,7 +245,9 @@ export default function TeamDashboard() {
     }
 
     try {
-      await groupService.deleteGroup(groupId);
+      await apiFetch<{ success: boolean }>(`/api/groups/${groupId}`, {
+        method: 'DELETE',
+      });
       setGroups((prev) => prev.filter((g) => g.facebook_group_id !== groupId));
       triggerToast('Group deleted.');
     } catch (err: unknown) {
@@ -243,7 +259,10 @@ export default function TeamDashboard() {
     if (!teamId || !user) return;
 
     try {
-      const newLog = await postService.logPost(groupId, teamId, user.id, todayStr);
+      const newLog = await apiFetch<PostLog>(`/api/teams/${teamId}/posts`, {
+        method: 'POST',
+        body: JSON.stringify({ groupId, dateStr: todayStr }),
+      });
       setTodayPosts((prev) => ({
         ...prev,
         [groupId]: newLog,
@@ -263,7 +282,9 @@ export default function TeamDashboard() {
     if (!postLog) return;
 
     try {
-      await postService.removePostLog(postLog.post_log_id);
+      await apiFetch<{ success: boolean }>(`/api/posts/${postLog.post_log_id}`, {
+        method: 'DELETE',
+      });
       setTodayPosts((prev) => {
         const next = { ...prev };
         delete next[groupId];

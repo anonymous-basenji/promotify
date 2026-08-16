@@ -2,10 +2,12 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Load from root .env or local .env
+// Load from current working directory or traverse to workspace root .env
 dotenv.config();
-dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+if (typeof import.meta.dirname === 'string') {
+  dotenv.config({ path: path.resolve(import.meta.dirname, '../../../.env') });
+  dotenv.config({ path: path.resolve(import.meta.dirname, '../../.env') });
+}
 
 const supabaseUrl =
   process.env.SUPABASE_PROJECT_URL ||

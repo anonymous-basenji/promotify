@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, History, ExternalLink, Trash2, Calendar, Clock, Loader2, MessageSquare } from 'lucide-react';
-import { postService } from '~/services/postService';
+import { apiFetch } from '~/lib/api';
 import type { FacebookGroup, PostLog } from '~/types/promotify';
 
 interface PostHistoryDrawerProps {
@@ -23,7 +23,9 @@ export function PostHistoryDrawer({
     if (!group) return;
     setIsLoading(true);
     try {
-      const data = await postService.getGroupPostHistory(group.facebook_group_id);
+      const data = await apiFetch<PostLog[]>(
+        `/api/groups/${group.facebook_group_id}/history`
+      );
       setLogs(data);
     } catch (err) {
       console.error('Failed to load group post history:', err);
@@ -42,7 +44,9 @@ export function PostHistoryDrawer({
     if (!confirm('Are you sure you want to delete this post log entry?')) return;
 
     try {
-      await postService.removePostLog(postLogId);
+      await apiFetch<{ success: boolean }>(`/api/posts/${postLogId}`, {
+        method: 'DELETE',
+      });
       setLogs((prev) => prev.filter((p) => p.post_log_id !== postLogId));
       if (onPostDeleted) onPostDeleted();
     } catch (err) {

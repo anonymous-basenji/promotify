@@ -7,8 +7,9 @@ import groupRoutes from './routes/group.routes';
 import postRoutes from './routes/post.routes';
 
 dotenv.config();
-dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+if (typeof import.meta.dirname === 'string') {
+  dotenv.config({ path: path.resolve(import.meta.dirname, '../../.env') });
+}
 
 const app = express();
 const PORT = process.env.BACKEND_PORT || process.env.PORT || 3000;

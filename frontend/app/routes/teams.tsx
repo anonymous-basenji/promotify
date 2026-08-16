@@ -12,7 +12,7 @@ import {
   X
 } from 'lucide-react';
 import { useAuth } from '~/context/AuthContext';
-import { teamService } from '~/services/teamService';
+import { apiFetch } from '~/lib/api';
 import type { Team } from '~/types/promotify';
 import { HeaderBar } from '~/components/HeaderBar';
 import { TeamMembersModal } from '~/components/TeamMembersModal';
@@ -44,7 +44,7 @@ export default function Teams() {
     setIsLoadingTeams(true);
     setErrorMsg(null);
     try {
-      const data = await teamService.getUserTeams(user.id);
+      const data = await apiFetch<Team[]>('/api/teams');
       setTeams(data);
     } catch (err: unknown) {
       setErrorMsg((err as Error).message || 'Failed to load teams');
@@ -67,12 +67,14 @@ export default function Teams() {
     setErrorMsg(null);
 
     try {
-      const newTeam = await teamService.createTeam(
-        teamName,
-        teamDescription,
-        teamPromoText,
-        user.id
-      );
+      const newTeam = await apiFetch<Team>('/api/teams', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: teamName,
+          description: teamDescription,
+          promoText: teamPromoText,
+        }),
+      });
 
       setIsCreateModalOpen(false);
       setTeamName('');
@@ -224,7 +226,7 @@ export default function Teams() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Greek Festival 2026 or Fall Festival"
+                    placeholder="e.g. Ed's Lawn Services or Greek Festival 2026"
                     value={teamName}
                     onChange={(e) => setTeamName(e.target.value)}
                     className="input-field"
