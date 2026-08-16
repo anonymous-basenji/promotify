@@ -3,6 +3,7 @@
   "installCommand": "npm install",
   "buildCommand": "npm run build --workspace=@promotify/frontend",
   "outputDirectory": "frontend/build/client",
+  "framework": null,
   "rewrites": [
     {
       "source": "/api/(.*)",
