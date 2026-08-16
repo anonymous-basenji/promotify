@@ -189,4 +189,28 @@ export const postRepository = {
     }
     return (data as PostLog) || null;
   },
+
+  async deleteAllByTeam(teamId: string): Promise<void> {
+    const { error } = await supabaseAdmin
+      .from('post_logs')
+      .delete()
+      .eq('team_id', teamId);
+
+    if (error) {
+      console.error('Error resetting team post logs:', error);
+      throw new Error(error.message);
+    }
+  },
+
+  async deleteAllByGroup(groupId: string): Promise<void> {
+    const { error } = await supabaseAdmin
+      .from('post_logs')
+      .delete()
+      .eq('facebook_group_id', groupId);
+
+    if (error) {
+      console.error('Error resetting group post logs:', error);
+      throw new Error(error.message);
+    }
+  },
 };

@@ -26,5 +26,6 @@ router.post('/:teamId/groups', groupController.createGroup);
 router.get('/:teamId/posts/today', postController.getTodayPosts);
 router.get('/:teamId/posts/counts', postController.getPostCounts);
 router.post('/:teamId/posts', postController.logPost);
+router.delete('/:teamId/posts', postController.resetTeamPosts);
 
 export default router;

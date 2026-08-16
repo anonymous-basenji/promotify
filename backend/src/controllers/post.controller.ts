@@ -78,4 +78,28 @@ export const postController = {
       res.status(status).json({ error: (err as Error).message });
     }
   },
+
+  async resetTeamPosts(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const teamId = req.params.teamId as string;
+      const userId = req.user!.user_id;
+      await postService.resetTeamPosts(teamId, userId);
+      res.json({ success: true });
+    } catch (err: unknown) {
+      const status = (err as { status?: number }).status || 500;
+      res.status(status).json({ error: (err as Error).message });
+    }
+  },
+
+  async resetGroupPosts(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const groupId = req.params.groupId as string;
+      const userId = req.user!.user_id;
+      await postService.resetGroupPosts(groupId, userId);
+      res.json({ success: true });
+    } catch (err: unknown) {
+      const status = (err as { status?: number }).status || 500;
+      res.status(status).json({ error: (err as Error).message });
+    }
+  },
 };

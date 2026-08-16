@@ -10,5 +10,6 @@ router.use(requireAuth);
 router.put('/:groupId', groupController.updateGroup);
 router.delete('/:groupId', groupController.deleteGroup);
 router.get('/:groupId/history', postController.getGroupHistory);
+router.delete('/:groupId/posts', postController.resetGroupPosts);
 
 export default router;

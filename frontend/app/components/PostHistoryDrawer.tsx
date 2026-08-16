@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, History, ExternalLink, Trash2, Calendar, Clock, Loader2, MessageSquare } from 'lucide-react';
+import { X, History, ExternalLink, Trash2, Calendar, Clock, Loader2, MessageSquare, RotateCcw } from 'lucide-react';
 import { apiFetch } from '~/lib/api';
-import type { FacebookGroup, PostLog } from '~/types/promotify';
+import type { FacebookGroup, PostLog, TeamRole } from '~/types/promotify';
 import './PostHistoryDrawer.css';
 
 interface PostHistoryDrawerProps {
   group: FacebookGroup | null;
+  currentUserRole?: TeamRole;
   isOpen: boolean;
   onClose: () => void;
   onPostDeleted?: () => void;
@@ -13,6 +14,7 @@ interface PostHistoryDrawerProps {
 
 export function PostHistoryDrawer({
   group,
+  currentUserRole,
   isOpen,
   onClose,
   onPostDeleted,
@@ -55,6 +57,29 @@ export function PostHistoryDrawer({
     }
   };
 
+  const handleResetGroupHistory = async () => {
+    if (!group) return;
+    if (
+      !confirm(
+        `Are you sure you want to delete all ${logs.length} logged post(s) for "${group.name}"? This action cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await apiFetch<{ success: boolean }>(`/api/groups/${group.facebook_group_id}/posts`, {
+        method: 'DELETE',
+      });
+      setLogs([]);
+      if (onPostDeleted) onPostDeleted();
+    } catch (err) {
+      console.error('Failed to reset group post history:', err);
+    }
+  };
+
+  const isAdmin = currentUserRole === 'owner' || currentUserRole === 'admin';
+
   if (!isOpen || !group) return null;
 
   return (
@@ -68,9 +93,22 @@ export function PostHistoryDrawer({
               <p className="modal-subtitle">{group.name}</p>
             </div>
           </div>
-          <button onClick={onClose} className="btn-close">
-            <X size={20} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {isAdmin && logs.length > 0 && (
+              <button
+                onClick={handleResetGroupHistory}
+                className="btn-secondary btn-sm"
+                style={{ color: 'var(--accent-amber)', borderColor: 'rgba(245, 158, 11, 0.3)' }}
+                title="Reset all post logs for this group"
+              >
+                <RotateCcw size={14} />
+                <span>Reset All</span>
+              </button>
+            )}
+            <button onClick={onClose} className="btn-close">
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         <div className="modal-body">

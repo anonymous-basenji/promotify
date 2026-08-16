@@ -96,4 +96,33 @@ export const postService = {
 
     await postRepository.delete(postLogId);
   },
+
+  async resetTeamPosts(teamId: string, userId: string): Promise<void> {
+    const role = await teamRepository.getMemberRole(teamId, userId);
+    if (!role || (role !== 'owner' && role !== 'admin')) {
+      const err = new Error('Only team admins can reset post counts');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    await postRepository.deleteAllByTeam(teamId);
+  },
+
+  async resetGroupPosts(groupId: string, userId: string): Promise<void> {
+    const group = await groupRepository.findById(groupId);
+    if (!group) {
+      const err = new Error('Group not found');
+      (err as unknown as { status: number }).status = 404;
+      throw err;
+    }
+
+    const role = await teamRepository.getMemberRole(group.team_id, userId);
+    if (!role || (role !== 'owner' && role !== 'admin')) {
+      const err = new Error('Only team admins can reset post counts for this group');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    await postRepository.deleteAllByGroup(groupId);
+  },
 };

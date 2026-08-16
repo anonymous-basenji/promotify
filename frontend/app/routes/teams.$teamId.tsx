@@ -18,6 +18,7 @@ import {
   Loader2,
   Save,
   Layers,
+  RotateCcw,
 } from 'lucide-react';
 import { useAuth } from '~/context/AuthContext';
 import { apiFetch } from '~/lib/api';
@@ -55,6 +56,7 @@ export default function TeamDashboard() {
   const [editTeamName, setEditTeamName] = useState('');
   const [editTeamDesc, setEditTeamDesc] = useState('');
   const [isSavingTeam, setIsSavingTeam] = useState(false);
+  const [isResettingPosts, setIsResettingPosts] = useState(false);
   const [historyDrawerGroup, setHistoryDrawerGroup] = useState<FacebookGroup | null>(null);
 
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
@@ -313,6 +315,51 @@ export default function TeamDashboard() {
         method: 'DELETE',
       });
       navigate('/teams', { replace: true });
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message);
+    }
+  };
+
+  const handleResetAllPosts = async () => {
+    if (!team || !teamId) return;
+    if (
+      !confirm(
+        `Are you sure you want to reset all post counts and clear all logged post history for workspace "${team.name}"? This action cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    setIsResettingPosts(true);
+    setErrorMsg(null);
+    try {
+      await apiFetch<{ success: boolean }>(`/api/teams/${teamId}/posts`, {
+        method: 'DELETE',
+      });
+      await loadDashboardData();
+      triggerToast('All post counts and history reset! 🔄');
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message);
+    } finally {
+      setIsResettingPosts(false);
+    }
+  };
+
+  const handleResetGroupPosts = async (groupId: string, groupName: string) => {
+    if (
+      !confirm(
+        `Are you sure you want to reset all post counts and clear history for group "${groupName}"? This action cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await apiFetch<{ success: boolean }>(`/api/groups/${groupId}/posts`, {
+        method: 'DELETE',
+      });
+      await loadDashboardData();
+      triggerToast(`Post history reset for "${groupName}"! 🔄`);
     } catch (err: unknown) {
       setErrorMsg((err as Error).message);
     }
@@ -648,6 +695,18 @@ export default function TeamDashboard() {
                 <span>Restricted Only</span>
               </label>
 
+              {(team?.user_role === 'owner' || team?.user_role === 'admin') && (
+                <button
+                  onClick={handleResetAllPosts}
+                  disabled={isResettingPosts}
+                  className="btn-secondary btn-sm"
+                  title="Reset all post counts & history for this workspace"
+                >
+                  {isResettingPosts ? <Loader2 size={14} className="spin" /> : <RotateCcw size={14} />}
+                  <span>Reset Counts</span>
+                </button>
+              )}
+
               <button onClick={handleOpenAddGroupModal} className="btn-primary btn-sm add-group-btn">
                 <Plus size={16} />
                 <span>Add Group</span>
@@ -824,6 +883,17 @@ export default function TeamDashboard() {
                       </div>
 
                       <div className="group-manage-btns">
+                        {(team?.user_role === 'owner' || team?.user_role === 'admin') && totalGroupPosts > 0 && (
+                          <button
+                            onClick={() =>
+                              handleResetGroupPosts(group.facebook_group_id, group.name)
+                            }
+                            className="btn-icon"
+                            title={`Reset post counts for "${group.name}"`}
+                          >
+                            <RotateCcw size={14} />
+                          </button>
+                        )}
                         <button
                           onClick={() => handleOpenEditGroupModal(group)}
                           className="btn-icon"
@@ -968,6 +1038,7 @@ export default function TeamDashboard() {
       {historyDrawerGroup && (
         <PostHistoryDrawer
           group={historyDrawerGroup}
+          currentUserRole={team.user_role || 'member'}
           isOpen={true}
           onClose={() => setHistoryDrawerGroup(null)}
           onPostDeleted={() => loadDashboardData()}
@@ -1021,17 +1092,29 @@ export default function TeamDashboard() {
                     Danger Zone
                   </h4>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '12px' }}>
-                    Permanently delete this workspace, including all groups, member associations, and post logs.
+                    Reset all post logging history, or permanently delete this workspace.
                   </p>
-                  <button
-                    type="button"
-                    onClick={handleDeleteTeamFromDashboard}
-                    className="btn-secondary"
-                    style={{ color: 'var(--accent-rose)', borderColor: 'rgba(244, 63, 94, 0.3)' }}
-                  >
-                    <Trash2 size={14} style={{ marginRight: '6px' }} />
-                    <span>Delete Workspace</span>
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={handleResetAllPosts}
+                      disabled={isResettingPosts}
+                      className="btn-secondary"
+                      style={{ color: 'var(--accent-amber)', borderColor: 'rgba(245, 158, 11, 0.3)' }}
+                    >
+                      {isResettingPosts ? <Loader2 size={14} className="spin" /> : <RotateCcw size={14} style={{ marginRight: '6px' }} />}
+                      <span>Reset Post Counts</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDeleteTeamFromDashboard}
+                      className="btn-secondary"
+                      style={{ color: 'var(--accent-rose)', borderColor: 'rgba(244, 63, 94, 0.3)' }}
+                    >
+                      <Trash2 size={14} style={{ marginRight: '6px' }} />
+                      <span>Delete Workspace</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
