@@ -17,6 +17,7 @@ import {
   History,
   Loader2,
   Save,
+  Layers,
 } from 'lucide-react';
 import { useAuth } from '~/context/AuthContext';
 import { apiFetch } from '~/lib/api';
@@ -487,6 +488,38 @@ export default function TeamDashboard() {
       )}
 
       <main className="dashboard-content">
+        <div className="dashboard-hero-header">
+          <div className="dashboard-hero-left">
+            <div className="dashboard-team-icon">
+              <Layers size={22} />
+            </div>
+            <div>
+              <div className="dashboard-team-title-row">
+                <h2 className="dashboard-team-title">{team.name}</h2>
+                {team.user_role && (
+                  <span className={`role-badge role-${team.user_role}`}>
+                    {team.user_role.toUpperCase()}
+                  </span>
+                )}
+              </div>
+              {team.description && (
+                <p className="dashboard-team-desc">{team.description}</p>
+              )}
+            </div>
+          </div>
+
+          {(team.user_role === 'owner' || team.user_role === 'admin') && (
+            <button
+              onClick={handleOpenSettingsModal}
+              className="btn-secondary btn-sm"
+              title="Edit Team Workspace Settings"
+            >
+              <Edit3 size={14} />
+              <span>Workspace Settings</span>
+            </button>
+          )}
+        </div>
+
         <section className="promo-text-card">
           <div className="promo-card-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
