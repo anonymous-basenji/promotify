@@ -1,0 +1,30 @@
+# Environment variables (CRITICAL: Do NOT commit)
+.env
+.env.*
+!.env.example
+
+# Node dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
+build/
+dist/
+.react-router/
+
+# IDE / OS metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Android / Capacitor build artifacts
+frontend/android/.gradle/
+frontend/android/build/
+frontend/android/app/build/
+android/.gradle/
+android/build/
+android/app/build/

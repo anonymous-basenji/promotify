@@ -1,0 +1,40 @@
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import path from 'path';
+import teamRoutes from './routes/team.routes';
+import groupRoutes from './routes/group.routes';
+import postRoutes from './routes/post.routes';
+
+dotenv.config();
+if (typeof import.meta.dirname === 'string') {
+  dotenv.config({ path: path.resolve(import.meta.dirname, '../../.env') });
+}
+
+const app = express();
+const PORT = process.env.BACKEND_PORT || 3000;
+
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
+
+app.use(express.json());
+
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', time: new Date().toISOString() });
+});
+
+app.use('/api/teams', teamRoutes);
+app.use('/api/groups', groupRoutes);
+app.use('/api/posts', postRoutes);
+
+app.listen(PORT, () => {
+  console.log(`Promotify One Backend running on http://localhost:${PORT}`);
+});
+
+export default app;

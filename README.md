@@ -1,42 +1,71 @@
-# Promotify 🚀
+# Promotify One 🚀
 
-**Promotify** is a mobile-first web and native Android app built with **React Router v7 (SSR + TypeScript)** and **Capacitor**. It helps entrepreneurs, content creators, and local business owners track which Facebook groups allow promotional posts on any given day of the week.
+**Promotify One** is an enterprise-grade, team-collaborative social media promotion tracker built with **React Router v7 (SSR + TypeScript)**, **Express.js**, and **Supabase (PostgreSQL + Auth)**.
 
----
-
-## ✨ Features
-
-- 📅 **Day-by-Day Group Schedule Tracker**:
-  - Filter groups by **Today** or inspect any day of the week (Sunday through Saturday).
-  - Preloaded with **39 Central Florida Facebook groups** (Orlando, Debary, Kissimmee, Sanford, Deltona, Oviedo, etc.) and their specific posting rules.
-  - Active day indicators (`S M T W T F S`) highlighting all allowed posting days per group.
-
-- ✍️ **Saved Promotion Post Template**:
-  - Editable promo post text box with auto-save to device `localStorage`.
-  - One-tap **"Copy & Track"** button to copy post text to clipboard and record your last posted timestamp.
-  - **Untrack** button to easily clear or reset a post timestamp.
-
-- ⚙️ **Dynamic Schedule Editor & Customization**:
-  - Add new Facebook groups.
-  - Edit group names, allowed days of the week, and posting rules/notes.
-  - Delete groups or reset to the original default seed schedule anytime.
-
-- 📱 **Mobile Friendly & Android Safe Area Ready**:
-  - Engineered with `viewport-fit=cover` and CSS safe-area insets (`env(safe-area-inset-top)` & `env(safe-area-inset-bottom)`) so the UI handles notch screens, status bars, and gesture navigation bars.
-
-- 🤖 **Automated Android APK Build Pipeline**:
-  - Includes a GitHub Actions CI workflow to automatically bundle the web app and compile a native Android `.apk` file using Capacitor.
+It empowers marketing teams, community organizers, and business owners to organize Facebook groups, manage promotional copy, schedule allowed posting days, and track multi-member post execution across dedicated workspaces.
 
 ---
 
-## 🛠️ Tech Stack
+## ✨ Key Features
 
-- **Framework**: React Router v7 (Server-Side Rendering + Static Export)
-- **Language**: TypeScript
-- **Styling**: Vanilla CSS (Sleek dark mode glassmorphism theme)
-- **Icons**: Lucide React
-- **Mobile Container**: Capacitor v6 (Android Platform)
-- **CI/CD**: GitHub Actions
+- 🏢 **Multi-Tenant Team Workspaces & Permissions**:
+  - Create and manage isolated team workspaces with role-based access control (`Owner`, `Admin`, `Member`).
+  - Invite team members by email, manage roles, or remove members.
+  - Dedicated workspace settings with danger zone controls (reset post counts, workspace deletion).
+
+- 📅 **Day-by-Day Facebook Group Schedule Tracker**:
+  - Filter groups by **Today**, specific days of the week (`Sunday`–`Saturday`), or view **All**.
+  - Intelligent sorting: Restricted groups (custom rules/notes or day limits) automatically surface first.
+  - Quick search and filtering for restricted-only schedules.
+
+- ✍️ **Team Promo Copy Synchronization**:
+  - Centralized promotional message editor per workspace with one-click copy to clipboard.
+  - Real-time updates saved directly to the database.
+
+- 📊 **Multi-Member Post Logging & History**:
+  - One-tap **"Mark Posted"** and **"Post Again"** for multi-post tracking.
+  - LIFO **Undo** to safely revert mistaken post logs.
+  - Comprehensive **Group Post History Drawer** showing timestamps, dates, notes, and the teammate who posted.
+  - Granular post count reset (reset per group or reset entire workspace).
+
+- 🔐 **Authentication & Security**:
+  - Powered by Supabase Auth supporting **Google OAuth** and **Email Magic Link** login.
+  - Row-Level Security (RLS) and Express middleware verifying workspace membership on every API call.
+
+- 📱 **Responsive Mobile-First UI**:
+  - Dark glassmorphism aesthetic built with Vanilla CSS variables and micro-interactions.
+  - Responsive header with full-width mobile hamburger menu.
+  - Safe-area support for mobile web and native Capacitor containers.
+
+---
+
+## 🛠️ Architecture & Tech Stack
+
+```
+promotify/
+├── backend/                  # Express + TypeScript API
+│   ├── src/
+│   │   ├── config/           # Supabase client configuration
+│   │   ├── controllers/      # Route controllers (Auth, Team, Group, Post)
+│   │   ├── middleware/       # Auth verification & error handling
+│   │   ├── repositories/     # Data access layer (Supabase PostgreSQL)
+│   │   ├── routes/           # REST API routes
+│   │   ├── services/         # Business logic & permission verification
+│   │   └── types/            # Backend TypeScript types & DTOs
+├── frontend/                 # React Router v7 Fullstack App
+│   ├── app/
+│   │   ├── components/       # UI components & scoped styles
+│   │   ├── context/          # Auth context & session provider
+│   │   ├── lib/              # API fetch helpers & config
+│   │   ├── routes/           # Page routes (Login, Teams, Team Dashboard)
+│   │   └── types/            # Frontend TypeScript types
+└── package.json              # Monorepo npm workspaces configuration
+```
+
+- **Frontend**: React Router v7, React 19, TypeScript, Lucide React, Vanilla CSS
+- **Backend**: Node.js, Express.js, TypeScript, Supabase JS Client
+- **Database & Auth**: Supabase (PostgreSQL with RLS + GoTrue Auth)
+- **Container / Mobile**: Capacitor v6 (Android ready)
 
 ---
 
@@ -45,65 +74,50 @@
 ### 1. Prerequisites
 - Node.js 20+
 - npm 10+
+- Supabase Project (URL, Anon Key, Service Role Key)
 
 ### 2. Installation
 ```bash
-git clone https://github.com/your-username/promotify.git
+git clone https://github.com/anonymous-basenji/promotify.git
 cd promotify
 npm install
 ```
 
-### 3. Development Server
-Start the local development server:
+### 3. Environment Variables
+Create a `.env` file in the root directory:
+```env
+# Frontend Supabase Public Config
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+VITE_API_URL=http://localhost:4000
+
+# Backend Config
+PORT=4000
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+SUPABASE_ANON_KEY=your-supabase-anon-key
+CLIENT_ORIGIN=http://localhost:3000
+```
+
+### 4. Database Setup
+Run the SQL schema in your Supabase SQL Editor:
+- Tables: `profiles`, `teams`, `team_members`, `facebook_groups`, `post_logs`.
+
+### 5. Running Locally
+Start both backend and frontend concurrently:
 ```bash
 npm run dev
 ```
-Open your browser and navigate to `http://localhost:3000`.
+- **Frontend**: `http://localhost:3000`
+- **Backend API**: `http://localhost:4000`
 
-### 4. Build for Production
-Build the web application (both SSR server bundle and static client assets):
+### 6. Type Checking & Production Build
 ```bash
+npm run typecheck
 npm run build
 ```
 
 ---
 
-## 📱 Mobile App Compilation (Capacitor)
-
-### Syncing Native Assets
-After building the production web assets, sync them to the native Android platform:
-```bash
-npm run build
-npx cap sync android
-```
-
-### Opening in Android Studio
-To run the app on an Android emulator or connected device:
-```bash
-npx cap open android
-```
-
----
-
-## ⚙️ GitHub Actions CI/CD Pipeline
-
-The repository includes a ready-to-use GitHub Actions workflow located at `.github/workflows/android-build.yml`.
-
-### How it works:
-1. Triggers on every push to `main` or `master`, or via manual trigger (`workflow_dispatch`).
-2. Sets up Node.js 20, JDK 17, and Android SDK.
-3. Compiles the web application with `npm run build`.
-4. Syncs web assets into Capacitor Android platform (`npx cap sync android`).
-5. Compiles the native debug APK using Gradle (`./gradlew assembleDebug`).
-6. Uploads the `.apk` file as a downloadable workflow artifact in GitHub Actions.
-
----
-
-## 📄 Data Schema & Persistence
-
-All schedule data and post text are automatically saved locally on your device via `localStorage`.
-
-- `promotify_groups_v1`: Array of Facebook group objects, allowed days, and last posted dates.
-- `promotify_promo_text_v1`: Your saved promotional text template.
-
-You can click the **Reset** button in the app header at any time to restore the original seed CSV schedule.
+## 📄 License
+MIT
