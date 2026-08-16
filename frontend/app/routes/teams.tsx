@@ -135,7 +135,7 @@ export default function Teams() {
             </div>
             <h3 className="empty-title">No teams found</h3>
             <p className="empty-subtitle">
-              Get started by creating your first festival or campaign team workspace.
+              Get started by creating your first business, festival, or campaign team workspace.
             </p>
             <button
               onClick={() => setIsCreateModalOpen(true)}
@@ -238,7 +238,7 @@ export default function Teams() {
                   <label className="form-label">Description (Optional)</label>
                   <input
                     type="text"
-                    placeholder="e.g. Social media promotion team for September event"
+                    placeholder="e.g. Social media promotion team for September sale"
                     value={teamDescription}
                     onChange={(e) => setTeamDescription(e.target.value)}
                     className="input-field"
