@@ -3,7 +3,6 @@
   "installCommand": "npm install",
   "buildCommand": "npm run build --workspace=@promotify/frontend",
   "outputDirectory": "frontend/build/client",
-  "framework": "vite",
   "rewrites": [
     {
       "source": "/api/(.*)",
