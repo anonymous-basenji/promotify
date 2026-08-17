@@ -169,7 +169,7 @@ export default function Teams() {
           <div>
             <h2 className="page-title">Your Workspaces</h2>
             <p className="page-subtitle">
-              Select a festival or campaign team to manage its Facebook group promotion roster.
+              Select a business campaign or festival team to manage its Facebook group promotion roster.
             </p>
           </div>
 
@@ -196,7 +196,7 @@ export default function Teams() {
             </div>
             <h3 className="empty-title">No teams found</h3>
             <p className="empty-subtitle">
-              Get started by creating your first business, festival, or campaign team workspace.
+              Get started by creating your first business campaign or festival team workspace.
             </p>
             <button
               onClick={() => setIsCreateModalOpen(true)}
@@ -294,7 +294,7 @@ export default function Teams() {
                 <Sparkles size={22} className="text-accent" />
                 <div>
                   <h2 className="modal-title">Create Team Workspace</h2>
-                  <p className="modal-subtitle">Set up a new festival or promotion campaign</p>
+                  <p className="modal-subtitle">Set up a new business campaign or festival workspace</p>
                 </div>
               </div>
               <button onClick={() => setIsCreateModalOpen(false)} className="btn-close">

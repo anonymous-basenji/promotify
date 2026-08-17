@@ -46,7 +46,7 @@ export default function Login() {
             <span className="brand-badge">BETA</span>
           </div>
           <p className="login-subtitle">
-            Coordinate festival & campaign promotions across Facebook groups with your team.
+            Coordinate business campaign & festival promotions across Facebook groups with your team.
           </p>
         </div>
 

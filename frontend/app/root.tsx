@@ -15,7 +15,7 @@ export const meta: MetaFunction = () => {
     {
       name: "description",
       content:
-        "Coordinate festival and campaign promotional schedules across Facebook groups with your team.",
+        "Coordinate business campaign and festival promotional schedules across Facebook groups with your team.",
     },
     {
       name: "viewport",

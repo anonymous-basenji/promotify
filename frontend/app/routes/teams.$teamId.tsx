@@ -1068,7 +1068,7 @@ export default function TeamDashboard() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Greek Festival 2026"
+                    placeholder="e.g. Ed's Lawn Services or Greek Festival 2026"
                     value={editTeamName}
                     onChange={(e) => setEditTeamName(e.target.value)}
                     className="input-field"
@@ -1080,7 +1080,7 @@ export default function TeamDashboard() {
                   <label className="form-label">Description (Optional)</label>
                   <input
                     type="text"
-                    placeholder="e.g. Social media promotion team for festival"
+                    placeholder="e.g. Social media promotion team for business or festival"
                     value={editTeamDesc}
                     onChange={(e) => setEditTeamDesc(e.target.value)}
                     className="input-field"
