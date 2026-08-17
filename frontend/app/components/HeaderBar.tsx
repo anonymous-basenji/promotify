@@ -89,7 +89,10 @@ export function HeaderBar({
                   {displayName.charAt(0).toUpperCase()}
                 </div>
               )}
-              <span className="user-name-text">{displayName}</span>
+              <div className="user-info-text">
+                <span className="user-name-text">{displayName}</span>
+                {userEmail && <span className="user-email-text">{userEmail}</span>}
+              </div>
             </div>
 
             <button
