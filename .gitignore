@@ -28,3 +28,4 @@ frontend/android/app/build/
 android/.gradle/
 android/build/
 android/app/build/
+.vercel
