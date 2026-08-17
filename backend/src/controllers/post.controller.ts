@@ -1,6 +1,6 @@
 import type { Response } from 'express';
-import { postService } from '../services/post.service';
-import type { AuthenticatedRequest } from '../types/backend.types';
+import { postService } from '../services/post.service.js';
+import type { AuthenticatedRequest } from '../types/backend.types.js';
 
 export const postController = {
   async getTodayPosts(req: AuthenticatedRequest, res: Response): Promise<void> {

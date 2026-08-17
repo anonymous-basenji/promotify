@@ -1,6 +1,6 @@
-import { teamRepository } from '../repositories/team.repository';
-import { profileRepository } from '../repositories/profile.repository';
-import type { Team, TeamMember, TeamRole } from '../types/backend.types';
+import { teamRepository } from '../repositories/team.repository.js';
+import { profileRepository } from '../repositories/profile.repository.js';
+import type { Team, TeamMember, TeamRole } from '../types/backend.types.js';
 
 export const teamService = {
   async getUserTeams(userId: string): Promise<Team[]> {

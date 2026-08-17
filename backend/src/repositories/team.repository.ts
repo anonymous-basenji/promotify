@@ -1,5 +1,5 @@
-import { supabaseAdmin } from '../config/supabase';
-import type { Team, TeamMember, TeamRole, Profile } from '../types/backend.types';
+import { supabaseAdmin } from '../config/supabase.js';
+import type { Team, TeamMember, TeamRole, Profile } from '../types/backend.types.js';
 
 export const teamRepository = {
   async findByUserId(userId: string): Promise<Team[]> {

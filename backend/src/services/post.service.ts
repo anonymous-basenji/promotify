@@ -1,7 +1,7 @@
-import { postRepository } from '../repositories/post.repository';
-import { teamRepository } from '../repositories/team.repository';
-import { groupRepository } from '../repositories/group.repository';
-import type { PostLog } from '../types/backend.types';
+import { postRepository } from '../repositories/post.repository.js';
+import { teamRepository } from '../repositories/team.repository.js';
+import { groupRepository } from '../repositories/group.repository.js';
+import type { PostLog } from '../types/backend.types.js';
 
 export const postService = {
   async getTodayPosts(

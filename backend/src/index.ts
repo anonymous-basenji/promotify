@@ -2,9 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
-import teamRoutes from './routes/team.routes';
-import groupRoutes from './routes/group.routes';
-import postRoutes from './routes/post.routes';
+import teamRoutes from './routes/team.routes.js';
+import groupRoutes from './routes/group.routes.js';
+import postRoutes from './routes/post.routes.js';
 
 dotenv.config();
 if (typeof import.meta.dirname === 'string') {

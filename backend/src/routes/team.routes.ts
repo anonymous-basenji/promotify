@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { teamController } from '../controllers/team.controller';
-import { groupController } from '../controllers/group.controller';
-import { postController } from '../controllers/post.controller';
-import { requireAuth } from '../middleware/auth.middleware';
+import { teamController } from '../controllers/team.controller.js';
+import { groupController } from '../controllers/group.controller.js';
+import { postController } from '../controllers/post.controller.js';
+import { requireAuth } from '../middleware/auth.middleware.js';
 
 const router = Router();
 

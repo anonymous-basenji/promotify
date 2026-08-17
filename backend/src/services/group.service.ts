@@ -1,6 +1,6 @@
-import { groupRepository, type CreateGroupDTO } from '../repositories/group.repository';
-import { teamRepository } from '../repositories/team.repository';
-import type { FacebookGroup } from '../types/backend.types';
+import { groupRepository, type CreateGroupDTO } from '../repositories/group.repository.js';
+import { teamRepository } from '../repositories/team.repository.js';
+import type { FacebookGroup } from '../types/backend.types.js';
 
 export const groupService = {
   async getTeamGroups(teamId: string, userId: string): Promise<FacebookGroup[]> {

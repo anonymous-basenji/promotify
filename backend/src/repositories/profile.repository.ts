@@ -1,5 +1,5 @@
-import { supabaseAdmin } from '../config/supabase';
-import type { Profile } from '../types/backend.types';
+import { supabaseAdmin } from '../config/supabase.js';
+import type { Profile } from '../types/backend.types.js';
 
 export const profileRepository = {
   async findByEmail(email: string): Promise<Profile | null> {

@@ -1,5 +1,5 @@
-import { supabaseAdmin } from '../config/supabase';
-import type { FacebookGroup, DayOfWeek, Profile } from '../types/backend.types';
+import { supabaseAdmin } from '../config/supabase.js';
+import type { FacebookGroup, DayOfWeek, Profile } from '../types/backend.types.js';
 
 export interface CreateGroupDTO {
   name: string;

@@ -1,6 +1,6 @@
 import type { Response, NextFunction } from 'express';
-import { supabaseAdmin } from '../config/supabase';
-import type { AuthenticatedRequest } from '../types/backend.types';
+import { supabaseAdmin } from '../config/supabase.js';
+import type { AuthenticatedRequest } from '../types/backend.types.js';
 
 export async function requireAuth(
   req: AuthenticatedRequest,

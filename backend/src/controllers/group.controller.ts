@@ -1,6 +1,6 @@
 import type { Response } from 'express';
-import { groupService } from '../services/group.service';
-import type { AuthenticatedRequest } from '../types/backend.types';
+import { groupService } from '../services/group.service.js';
+import type { AuthenticatedRequest } from '../types/backend.types.js';
 
 export const groupController = {
   async getTeamGroups(req: AuthenticatedRequest, res: Response): Promise<void> {
