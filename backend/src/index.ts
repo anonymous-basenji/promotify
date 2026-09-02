@@ -16,7 +16,10 @@ const PORT = process.env.BACKEND_PORT || 3000;
 
 app.use(
   cors({
-    origin: true,
+    origin: [
+      'http://localhost:5173',
+      'https://promotify-one.vercel.app',
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
