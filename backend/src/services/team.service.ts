@@ -164,6 +164,12 @@ export const teamService = {
       throw err;
     }
 
+    if (targetMember.team_id !== teamId) {
+      const err = new Error('Member does not belong to this team');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
     if (targetMember.user_id === requestingUserId) {
       const err = new Error('You cannot change your own role');
       (err as unknown as { status: number }).status = 403;
@@ -196,6 +202,12 @@ export const teamService = {
     if (!member) {
       const err = new Error('Member not found');
       (err as unknown as { status: number }).status = 404;
+      throw err;
+    }
+
+    if (member.team_id !== teamId) {
+      const err = new Error('Member does not belong to this team');
+      (err as unknown as { status: number }).status = 403;
       throw err;
     }
 
