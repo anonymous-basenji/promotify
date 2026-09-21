@@ -157,6 +157,31 @@ export const teamService = {
       throw err;
     }
 
+    const targetMember = await teamRepository.getMemberById(teamMemberId);
+    if (!targetMember) {
+      const err = new Error('Member not found');
+      (err as unknown as { status: number }).status = 404;
+      throw err;
+    }
+
+    if (targetMember.user_id === requestingUserId) {
+      const err = new Error('You cannot change your own role');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    if (newRole === 'owner' && requesterRole !== 'owner') {
+      const err = new Error('Only the team owner can transfer ownership');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    if (targetMember.role === 'owner' && requesterRole !== 'owner') {
+      const err = new Error('Admins cannot change the owner role');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
     await teamRepository.updateMemberRole(teamMemberId, newRole);
   },
 
