@@ -2,6 +2,16 @@ import type { Response } from 'express';
 import { groupService } from '../services/group.service.js';
 import type { AuthenticatedRequest } from '../types/backend.types.js';
 
+function handleError(res: Response, err: unknown): void {
+  const status = (err as { status?: number }).status || 500;
+  if (status >= 500) {
+    console.error('Internal server error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+    return;
+  }
+  res.status(status).json({ error: (err as Error).message || 'An error occurred' });
+}
+
 export const groupController = {
   async getTeamGroups(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -10,8 +20,7 @@ export const groupController = {
       const groups = await groupService.getTeamGroups(teamId, userId);
       res.json(groups);
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 
@@ -37,8 +46,7 @@ export const groupController = {
       });
       res.status(201).json(newGroup);
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 
@@ -56,8 +64,7 @@ export const groupController = {
       });
       res.json({ success: true });
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 
@@ -68,8 +75,7 @@ export const groupController = {
       await groupService.deleteGroup(groupId, userId);
       res.json({ success: true });
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 };

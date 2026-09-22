@@ -2,6 +2,16 @@ import type { Response } from 'express';
 import { teamService } from '../services/team.service.js';
 import type { AuthenticatedRequest } from '../types/backend.types.js';
 
+function handleError(res: Response, err: unknown): void {
+  const status = (err as { status?: number }).status || 500;
+  if (status >= 500) {
+    console.error('Internal server error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+    return;
+  }
+  res.status(status).json({ error: (err as Error).message || 'An error occurred' });
+}
+
 export const teamController = {
   async getTeams(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -9,8 +19,7 @@ export const teamController = {
       const teams = await teamService.getUserTeams(userId);
       res.json(teams);
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 
@@ -21,8 +30,7 @@ export const teamController = {
       const team = await teamService.getTeamById(teamId, userId);
       res.json(team);
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 
@@ -38,8 +46,7 @@ export const teamController = {
       );
       res.status(201).json(newTeam);
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 
@@ -55,8 +62,7 @@ export const teamController = {
       );
       res.json(updated);
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 
@@ -67,8 +73,7 @@ export const teamController = {
       await teamService.deleteTeam(teamId, userId);
       res.json({ success: true });
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 
@@ -80,8 +85,7 @@ export const teamController = {
       await teamService.updatePromoText(teamId, promoText || '', userId);
       res.json({ success: true });
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 
@@ -92,8 +96,7 @@ export const teamController = {
       const members = await teamService.getTeamMembers(teamId, userId);
       res.json(members);
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 
@@ -116,8 +119,7 @@ export const teamController = {
       );
       res.status(201).json(newMember);
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 
@@ -136,8 +138,7 @@ export const teamController = {
       await teamService.updateMemberRole(teamId, memberId, role, userId);
       res.json({ success: true });
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 
@@ -149,8 +150,7 @@ export const teamController = {
       await teamService.removeMember(teamId, memberId, userId);
       res.json({ success: true });
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 };

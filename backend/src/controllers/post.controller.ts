@@ -2,6 +2,16 @@ import type { Response } from 'express';
 import { postService } from '../services/post.service.js';
 import type { AuthenticatedRequest } from '../types/backend.types.js';
 
+function handleError(res: Response, err: unknown): void {
+  const status = (err as { status?: number }).status || 500;
+  if (status >= 500) {
+    console.error('Internal server error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+    return;
+  }
+  res.status(status).json({ error: (err as Error).message || 'An error occurred' });
+}
+
 export const postController = {
   async getTodayPosts(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -11,8 +21,7 @@ export const postController = {
       const posts = await postService.getTodayPosts(teamId, dateStr, userId);
       res.json(posts);
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 
@@ -23,8 +32,7 @@ export const postController = {
       const counts = await postService.getPostCounts(teamId, userId);
       res.json(counts);
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 
@@ -35,8 +43,7 @@ export const postController = {
       const history = await postService.getGroupHistory(groupId, userId);
       res.json(history);
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 
@@ -62,8 +69,7 @@ export const postController = {
       );
       res.status(201).json(newPost);
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 
@@ -74,8 +80,7 @@ export const postController = {
       await postService.removePostLog(postLogId, userId);
       res.json({ success: true });
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 
@@ -86,8 +91,7 @@ export const postController = {
       await postService.resetTeamPosts(teamId, userId);
       res.json({ success: true });
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 
@@ -98,8 +102,7 @@ export const postController = {
       await postService.resetGroupPosts(groupId, userId);
       res.json({ success: true });
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status || 500;
-      res.status(status).json({ error: (err as Error).message });
+      handleError(res, err);
     }
   },
 };
