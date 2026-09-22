@@ -82,7 +82,7 @@ export const teamService = {
 
   async deleteTeam(teamId: string, userId: string): Promise<void> {
     const role = await teamRepository.getMemberRole(teamId, userId);
-    if (role !== 'owner' && role !== 'admin') {
+    if (role !== 'owner') {
       const err = new Error('Only team admins can delete this workspace');
       (err as unknown as { status: number }).status = 403;
       throw err;
