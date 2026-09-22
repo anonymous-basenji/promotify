@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
 import teamRoutes from './routes/team.routes.js';
@@ -27,6 +28,13 @@ app.use(
 );
 
 app.use(express.json({ limit: '16kb' }));
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: 'Too many requests, slow down.' },
+});
+app.use(limiter);
 
 app.get(['/api/health', '/health'], (_req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
