@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '../config/supabase.js';
-import type { Team, TeamMember, TeamRole, Profile } from '../types/backend.types.js';
+import type { Team, TeamMember, TeamRole, Profile, TeamSnippet } from '../types/backend.types.js';
 
 export const teamRepository = {
   async findByUserId(userId: string): Promise<Team[]> {
@@ -258,5 +258,90 @@ export const teamRepository = {
       throw new Error(error.message);
     }
     return (data as TeamMember) || null;
+  },
+
+  async getSnippets(teamId: string): Promise<TeamSnippet[]> {
+    const { data, error } = await supabaseAdmin
+      .from('team_snippets')
+      .select('*')
+      .eq('team_id', teamId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching snippets:', error);
+      throw new Error(error.message);
+    }
+    return (data || []) as TeamSnippet[];
+  },
+
+  async createSnippet(snippetData: {
+    team_id: string;
+    user_id: string;
+    title: string;
+    content: string;
+  }): Promise<TeamSnippet> {
+    const { data, error } = await supabaseAdmin
+      .from('team_snippets')
+      .insert({
+        team_id: snippetData.team_id,
+        user_id: snippetData.user_id,
+        title: snippetData.title,
+        content: snippetData.content,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating snippet:', error);
+      throw new Error(error.message);
+    }
+    return data as TeamSnippet;
+  },
+
+  async updateSnippet(
+    snippetId: string,
+    snippetData: { title?: string; content?: string }
+  ): Promise<TeamSnippet> {
+    const { data, error } = await supabaseAdmin
+      .from('team_snippets')
+      .update({
+        ...snippetData,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('team_snippet_id', snippetId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating snippet:', error);
+      throw new Error(error.message);
+    }
+    return data as TeamSnippet;
+  },
+
+  async deleteSnippet(snippetId: string): Promise<void> {
+    const { error } = await supabaseAdmin
+      .from('team_snippets')
+      .delete()
+      .eq('team_snippet_id', snippetId);
+
+    if (error) {
+      console.error('Error deleting snippet:', error);
+      throw new Error(error.message);
+    }
+  },
+
+  async getSnippetById(snippetId: string): Promise<TeamSnippet | null> {
+    const { data, error } = await supabaseAdmin
+      .from('team_snippets')
+      .select('*')
+      .eq('team_snippet_id', snippetId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error getting snippet by id:', error);
+      throw new Error(error.message);
+    }
+    return (data as TeamSnippet) || null;
   },
 };

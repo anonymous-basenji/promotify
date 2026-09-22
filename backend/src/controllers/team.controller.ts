@@ -41,6 +41,16 @@ const updateMemberRoleSchema = z.object({
   role: z.enum(['owner', 'admin', 'member'], { message: 'Valid role is required (owner, admin, member)' }),
 });
 
+const createSnippetSchema = z.object({
+  title: z.string().trim().min(1, 'Title is required').max(150, 'Title cannot exceed 150 characters'),
+  content: z.string().trim().min(1, 'Content is required').max(10000, 'Content cannot exceed 10000 characters'),
+});
+
+const updateSnippetSchema = z.object({
+  title: z.string().trim().min(1, 'Title cannot be empty').max(150, 'Title cannot exceed 150 characters').optional(),
+  content: z.string().trim().min(1, 'Content cannot be empty').max(10000, 'Content cannot exceed 10000 characters').optional(),
+});
+
 export const teamController = {
   async getTeams(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -167,6 +177,54 @@ export const teamController = {
       const memberId = req.params.memberId as string;
       const userId = req.user!.user_id;
       await teamService.removeMember(teamId, memberId, userId);
+      res.json({ success: true });
+    } catch (err: unknown) {
+      handleError(res, err);
+    }
+  },
+
+  async getSnippets(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const teamId = req.params.teamId as string;
+      const userId = req.user!.user_id;
+      const snippets = await teamService.getTeamSnippets(teamId, userId);
+      res.json(snippets);
+    } catch (err: unknown) {
+      handleError(res, err);
+    }
+  },
+
+  async createSnippet(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const teamId = req.params.teamId as string;
+      const userId = req.user!.user_id;
+      const { title, content } = createSnippetSchema.parse(req.body);
+      const snippet = await teamService.createSnippet(teamId, title, content, userId);
+      res.status(201).json(snippet);
+    } catch (err: unknown) {
+      handleError(res, err);
+    }
+  },
+
+  async updateSnippet(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const teamId = req.params.teamId as string;
+      const snippetId = req.params.snippetId as string;
+      const userId = req.user!.user_id;
+      const data = updateSnippetSchema.parse(req.body);
+      const updated = await teamService.updateSnippet(teamId, snippetId, data, userId);
+      res.json(updated);
+    } catch (err: unknown) {
+      handleError(res, err);
+    }
+  },
+
+  async deleteSnippet(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const teamId = req.params.teamId as string;
+      const snippetId = req.params.snippetId as string;
+      const userId = req.user!.user_id;
+      await teamService.deleteSnippet(teamId, snippetId, userId);
       res.json({ success: true });
     } catch (err: unknown) {
       handleError(res, err);

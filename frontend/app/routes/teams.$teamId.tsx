@@ -19,10 +19,11 @@ import {
   Save,
   Layers,
   RotateCcw,
+  FileText,
 } from 'lucide-react';
 import { useAuth } from '~/context/AuthContext';
 import { apiFetch } from '~/lib/api';
-import type { DayOfWeek, FacebookGroup, PostLog, Team, ViewFilter } from '~/types/promotify';
+import type { DayOfWeek, FacebookGroup, PostLog, Team, ViewFilter, TeamSnippet } from '~/types/promotify';
 import { DAYS_OF_WEEK } from '~/types/promotify';
 import { HeaderBar } from '~/components/HeaderBar';
 import { TeamMembersModal } from '~/components/TeamMembersModal';
@@ -42,6 +43,19 @@ export default function TeamDashboard() {
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const [snippets, setSnippets] = useState<TeamSnippet[]>([]);
+  const [selectedSnippetId, setSelectedSnippetId] = useState<string | null>(null);
+  const [isSnippetModalOpen, setIsSnippetModalOpen] = useState(false);
+  const [editingSnippet, setEditingSnippet] = useState<TeamSnippet | null>(null);
+  const [snippetTitle, setSnippetTitle] = useState('');
+  const [snippetContent, setSnippetContent] = useState('');
+  const [isSavingSnippet, setIsSavingSnippet] = useState(false);
+
+  const activeSnippet = useMemo(() => {
+    if (!snippets || snippets.length === 0) return null;
+    return snippets.find((s) => s.team_snippet_id === selectedSnippetId) || snippets[0];
+  }, [snippets, selectedSnippetId]);
 
   const [isEditingPromo, setIsEditingPromo] = useState(false);
   const [tempPromoText, setTempPromoText] = useState('');
@@ -112,17 +126,19 @@ export default function TeamDashboard() {
       setPromoText(teamData.promo_text || '');
       setTempPromoText(teamData.promo_text || '');
 
-      const [groupData, todayLogs, counts] = await Promise.all([
+      const [groupData, todayLogs, counts, snippetData] = await Promise.all([
         apiFetch<FacebookGroup[]>(`/api/teams/${teamId}/groups`),
         apiFetch<Record<string, PostLog[]>>(
           `/api/teams/${teamId}/posts/today?date=${encodeURIComponent(todayStr)}`
         ),
         apiFetch<Record<string, number>>(`/api/teams/${teamId}/posts/counts`),
+        apiFetch<TeamSnippet[]>(`/api/teams/${teamId}/snippets`).catch(() => []),
       ]);
 
       setGroups(groupData);
       setTodayPosts(todayLogs);
       setPostCounts(counts);
+      setSnippets(snippetData || []);
     } catch (err: unknown) {
       setErrorMsg((err as Error).message || 'Failed to load team data');
     } finally {
@@ -178,6 +194,103 @@ export default function TeamDashboard() {
     } finally {
       setIsSavingPromo(false);
     }
+  };
+
+  const handleOpenAddSnippet = () => {
+    setEditingSnippet(null);
+    setSnippetTitle('');
+    setSnippetContent('');
+    setIsSnippetModalOpen(true);
+  };
+
+  const handleOpenEditSnippet = (snippet: TeamSnippet) => {
+    setEditingSnippet(snippet);
+    setSnippetTitle(snippet.title);
+    setSnippetContent(snippet.content);
+    setIsSnippetModalOpen(true);
+  };
+
+  const handleSaveSnippet = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!teamId || !snippetTitle.trim() || !snippetContent.trim()) return;
+
+    setIsSavingSnippet(true);
+    setErrorMsg(null);
+    try {
+      if (editingSnippet) {
+        const updated = await apiFetch<TeamSnippet>(
+          `/api/teams/${teamId}/snippets/${editingSnippet.team_snippet_id}`,
+          {
+            method: 'PUT',
+            body: JSON.stringify({
+              title: snippetTitle.trim(),
+              content: snippetContent.trim(),
+            }),
+          }
+        );
+        setSnippets((prev) =>
+          prev.map((s) => (s.team_snippet_id === updated.team_snippet_id ? updated : s))
+        );
+        triggerToast('Snippet updated! ✨');
+      } else {
+        const created = await apiFetch<TeamSnippet>(`/api/teams/${teamId}/snippets`, {
+          method: 'POST',
+          body: JSON.stringify({
+            title: snippetTitle.trim(),
+            content: snippetContent.trim(),
+          }),
+        });
+        setSnippets((prev) => [...prev, created]);
+        triggerToast('Snippet added! 🚀');
+      }
+      setIsSnippetModalOpen(false);
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message);
+    } finally {
+      setIsSavingSnippet(false);
+    }
+  };
+
+  const handleDeleteSnippet = async (snippetId: string, title: string) => {
+    if (!teamId) return;
+    if (!confirm(`Are you sure you want to delete snippet "${title}"?`)) return;
+
+    try {
+      await apiFetch<{ success: boolean }>(`/api/teams/${teamId}/snippets/${snippetId}`, {
+        method: 'DELETE',
+      });
+      setSnippets((prev) => prev.filter((s) => s.team_snippet_id !== snippetId));
+      triggerToast('Snippet deleted.');
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message);
+    }
+  };
+
+  const handleCopySnippetText = async (content: string, title: string) => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(content);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = content;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      triggerToast(`"${title}" copied to clipboard! 📋`);
+    } catch (err) {
+      console.error('Failed to copy snippet:', err);
+      triggerToast('Could not copy to clipboard.');
+    }
+  };
+
+  const handleUseSnippetAsPromo = (content: string, title: string) => {
+    setTempPromoText(content);
+    setIsEditingPromo(true);
+    triggerToast(`"${title}" loaded into promo editor! Click Save to apply.`);
   };
 
   const handleOpenAddGroupModal = () => {
@@ -632,6 +745,101 @@ export default function TeamDashboard() {
               <p className="promo-preview-text">
                 {promoText || 'No promo text set yet. Click "Edit Copy" to add your promo message!'}
               </p>
+            </div>
+          )}
+        </section>
+
+        <section className="snippets-section-card">
+          <div className="snippets-card-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FileText size={18} className="text-accent" />
+              <h3 className="section-title">Saved Texts & Alternate Copies</h3>
+              <span className="snippets-count-badge">{snippets.length}</span>
+            </div>
+
+            <button
+              onClick={handleOpenAddSnippet}
+              className="btn-primary btn-sm"
+              title="Add a new saved text or alternate copy"
+            >
+              <Plus size={14} />
+              <span>Add Text</span>
+            </button>
+          </div>
+
+          {snippets.length === 0 ? (
+            <div className="snippets-empty-box">
+              <p className="snippets-empty-text">
+                No snippets saved yet. Save alternate promo translations, campaign variants, or common replies for your team!
+              </p>
+            </div>
+          ) : (
+            <div className="snippets-tabs-layout">
+              <div className="snippets-pills-bar">
+                {snippets.map((snippet) => {
+                  const isSelected = activeSnippet?.team_snippet_id === snippet.team_snippet_id;
+                  return (
+                    <button
+                      key={snippet.team_snippet_id}
+                      onClick={() => setSelectedSnippetId(snippet.team_snippet_id)}
+                      className={`snippet-pill-tab ${isSelected ? 'active' : ''}`}
+                      type="button"
+                    >
+                      <span className="snippet-pill-title">{snippet.title}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {activeSnippet && (
+                <div className="snippet-active-card">
+                  <div className="snippet-active-toolbar">
+                    <span className="snippet-active-title">{activeSnippet.title}</span>
+
+                    <div className="snippet-active-actions">
+                      <button
+                        onClick={() => handleCopySnippetText(activeSnippet.content, activeSnippet.title)}
+                        className="btn-primary btn-sm copy-btn"
+                        title="Copy to clipboard"
+                      >
+                        <Copy size={13} />
+                        <span>Copy</span>
+                      </button>
+                      <button
+                        onClick={() => handleUseSnippetAsPromo(activeSnippet.content, activeSnippet.title)}
+                        className="btn-secondary btn-sm"
+                        title="Load into Main Promo Post Copy"
+                      >
+                        <Share2 size={13} />
+                        <span>Use as Promo</span>
+                      </button>
+                      <button
+                        onClick={() => handleOpenEditSnippet(activeSnippet)}
+                        className="btn-secondary btn-sm"
+                        title="Edit text"
+                      >
+                        <Edit3 size={13} />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSnippet(activeSnippet.team_snippet_id, activeSnippet.title)}
+                        className="btn-icon text-danger"
+                        title="Delete text"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div
+                    className="promo-preview-box"
+                    onClick={() => handleCopySnippetText(activeSnippet.content, activeSnippet.title)}
+                    title="Click to copy"
+                  >
+                    <p className="promo-preview-text">{activeSnippet.content}</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </section>
@@ -1140,6 +1348,92 @@ export default function TeamDashboard() {
                     </>
                   ) : (
                     <span>Save Changes</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isSnippetModalOpen && (
+        <div className="modal-backdrop" onClick={() => setIsSnippetModalOpen(false)}>
+          <div className="modal-content modal-md" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FileText size={22} className="text-accent" />
+                <div>
+                  <h2 className="modal-title">
+                    {editingSnippet ? 'Edit Snippet' : 'Add New Snippet'}
+                  </h2>
+                  <p className="modal-subtitle">
+                    Alternate promo versions (translations, campaigns), common replies, FAQs, or event copy.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsSnippetModalOpen(false)}
+                className="btn-icon"
+                title="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveSnippet}>
+              <div className="modal-body">
+                <div className="input-group">
+                  <label className="input-label" htmlFor="snippetTitle">
+                    Snippet Title *
+                  </label>
+                  <input
+                    id="snippetTitle"
+                    type="text"
+                    required
+                    value={snippetTitle}
+                    onChange={(e) => setSnippetTitle(e.target.value)}
+                    placeholder="e.g. Spanish Promo, Holiday Special, Pricing FAQ..."
+                    className="input-field"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label className="input-label" htmlFor="snippetContent">
+                    Snippet Text Content *
+                  </label>
+                  <textarea
+                    id="snippetContent"
+                    rows={6}
+                    required
+                    value={snippetContent}
+                    onChange={(e) => setSnippetContent(e.target.value)}
+                    placeholder="Paste or write your copy template here..."
+                    className="textarea-field"
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  onClick={() => setIsSnippetModalOpen(false)}
+                  className="btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingSnippet || !snippetTitle.trim() || !snippetContent.trim()}
+                  className="btn-primary"
+                >
+                  {isSavingSnippet ? (
+                    <>
+                      <Loader2 size={16} className="spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>{editingSnippet ? 'Update Snippet' : 'Save Snippet'}</span>
                   )}
                 </button>
               </div>

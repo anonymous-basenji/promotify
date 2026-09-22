@@ -40,6 +40,16 @@ export interface TeamMember {
   profile?: Profile;
 }
 
+export interface TeamSnippet {
+  team_snippet_id: string;
+  team_id: string;
+  user_id: string | null;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface FacebookGroup {
   facebook_group_id: string;
   team_id: string;

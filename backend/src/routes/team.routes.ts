@@ -14,6 +14,10 @@ router.get('/:teamId', teamController.getTeam);
 router.put('/:teamId', teamController.updateTeam);
 router.delete('/:teamId', teamController.deleteTeam);
 router.patch('/:teamId/promo', teamController.updatePromo);
+router.get('/:teamId/snippets', teamController.getSnippets);
+router.post('/:teamId/snippets', teamController.createSnippet);
+router.put('/:teamId/snippets/:snippetId', teamController.updateSnippet);
+router.delete('/:teamId/snippets/:snippetId', teamController.deleteSnippet);
 
 router.get('/:teamId/members', teamController.getMembers);
 router.post('/:teamId/members', teamController.addMember);
