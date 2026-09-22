@@ -249,6 +249,15 @@ export default function Teams() {
                           >
                             <Trash2 size={14} />
                           </button>
+                          {team.user_role === 'owner' && (
+                            <button
+                              onClick={() => handleDeleteTeam(team)}
+                              className="btn-icon btn-danger-soft"
+                              title="Delete workspace"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
