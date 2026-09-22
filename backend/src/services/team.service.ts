@@ -1,6 +1,6 @@
 import { teamRepository } from '../repositories/team.repository.js';
 import { profileRepository } from '../repositories/profile.repository.js';
-import type { Team, TeamMember, TeamRole } from '../types/backend.types.js';
+import type { Team, TeamMember, TeamRole, TeamSnippet } from '../types/backend.types.js';
 
 export const teamService = {
   async getUserTeams(userId: string): Promise<Team[]> {
@@ -221,5 +221,108 @@ export const teamService = {
     }
 
     await teamRepository.removeMember(teamMemberId);
+  },
+
+  async getTeamSnippets(teamId: string, userId: string): Promise<TeamSnippet[]> {
+    const role = await teamRepository.getMemberRole(teamId, userId);
+    if (!role) {
+      const err = new Error('You are not a member of this team');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+    return await teamRepository.getSnippets(teamId);
+  },
+
+  async createSnippet(
+    teamId: string,
+    title: string,
+    content: string,
+    userId: string
+  ): Promise<TeamSnippet> {
+    const role = await teamRepository.getMemberRole(teamId, userId);
+    if (!role) {
+      const err = new Error('You are not a member of this team');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    if (!title || !title.trim()) {
+      const err = new Error('Title is required');
+      (err as unknown as { status: number }).status = 400;
+      throw err;
+    }
+
+    if (!content || !content.trim()) {
+      const err = new Error('Content is required');
+      (err as unknown as { status: number }).status = 400;
+      throw err;
+    }
+
+    return await teamRepository.createSnippet({
+      team_id: teamId,
+      user_id: userId,
+      title: title.trim(),
+      content: content.trim(),
+    });
+  },
+
+  async updateSnippet(
+    teamId: string,
+    snippetId: string,
+    data: { title?: string; content?: string },
+    userId: string
+  ): Promise<TeamSnippet> {
+    const role = await teamRepository.getMemberRole(teamId, userId);
+    if (!role) {
+      const err = new Error('You are not a member of this team');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    const snippet = await teamRepository.getSnippetById(snippetId);
+    if (!snippet) {
+      const err = new Error('Snippet not found');
+      (err as unknown as { status: number }).status = 404;
+      throw err;
+    }
+
+    if (snippet.team_id !== teamId) {
+      const err = new Error('Snippet does not belong to this team');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    return await teamRepository.updateSnippet(snippetId, {
+      title: data.title !== undefined ? data.title.trim() : undefined,
+      content: data.content !== undefined ? data.content.trim() : undefined,
+    });
+  },
+
+  async deleteSnippet(
+    teamId: string,
+    snippetId: string,
+    userId: string
+  ): Promise<void> {
+    const role = await teamRepository.getMemberRole(teamId, userId);
+    if (!role) {
+      const err = new Error('You are not a member of this team');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    const snippet = await teamRepository.getSnippetById(snippetId);
+    if (!snippet) {
+      const err = new Error('Snippet not found');
+      (err as unknown as { status: number }).status = 404;
+      throw err;
+    }
+
+    if (snippet.team_id !== teamId) {
+      const err = new Error('Snippet does not belong to this team');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    await teamRepository.deleteSnippet(snippetId);
   },
 };

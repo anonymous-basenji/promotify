@@ -40,6 +40,16 @@ export interface Team {
   user_role?: TeamRole;
 }
 
+export interface TeamSnippet {
+  team_snippet_id: string;
+  team_id: string;
+  user_id: string | null;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface TeamMember {
   team_member_id: string;
   team_id: string;
