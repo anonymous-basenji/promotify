@@ -1105,15 +1105,17 @@ export default function TeamDashboard() {
                       {isResettingPosts ? <Loader2 size={14} className="spin" /> : <RotateCcw size={14} style={{ marginRight: '6px' }} />}
                       <span>Reset Post Counts</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={handleDeleteTeamFromDashboard}
-                      className="btn-secondary"
-                      style={{ color: 'var(--accent-rose)', borderColor: 'rgba(244, 63, 94, 0.3)' }}
-                    >
-                      <Trash2 size={14} style={{ marginRight: '6px' }} />
-                      <span>Delete Workspace</span>
-                    </button>
+                    {team?.user_role === 'owner' && (
+                      <button
+                        type="button"
+                        onClick={handleDeleteTeamFromDashboard}
+                        className="btn-secondary"
+                        style={{ color: 'var(--accent-rose)', borderColor: 'rgba(244, 63, 94, 0.3)' }}
+                      >
+                        <Trash2 size={14} style={{ marginRight: '6px' }} />
+                        <span>Delete Workspace</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

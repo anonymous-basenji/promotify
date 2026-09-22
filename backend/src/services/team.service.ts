@@ -82,8 +82,8 @@ export const teamService = {
 
   async deleteTeam(teamId: string, userId: string): Promise<void> {
     const role = await teamRepository.getMemberRole(teamId, userId);
-    if (role !== 'owner' && role !== 'admin') {
-      const err = new Error('Only team admins can delete this workspace');
+    if (role !== 'owner') {
+      const err = new Error('Only team owners can delete this workspace');
       (err as unknown as { status: number }).status = 403;
       throw err;
     }
@@ -157,6 +157,37 @@ export const teamService = {
       throw err;
     }
 
+    const targetMember = await teamRepository.getMemberById(teamMemberId);
+    if (!targetMember) {
+      const err = new Error('Member not found');
+      (err as unknown as { status: number }).status = 404;
+      throw err;
+    }
+
+    if (targetMember.team_id !== teamId) {
+      const err = new Error('Member does not belong to this team');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    if (targetMember.user_id === requestingUserId) {
+      const err = new Error('You cannot change your own role');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    if (newRole === 'owner' && requesterRole !== 'owner') {
+      const err = new Error('Only the team owner can transfer ownership');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    if (targetMember.role === 'owner' && requesterRole !== 'owner') {
+      const err = new Error('Admins cannot change the owner role');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
     await teamRepository.updateMemberRole(teamMemberId, newRole);
   },
 
@@ -171,6 +202,12 @@ export const teamService = {
     if (!member) {
       const err = new Error('Member not found');
       (err as unknown as { status: number }).status = 404;
+      throw err;
+    }
+
+    if (member.team_id !== teamId) {
+      const err = new Error('Member does not belong to this team');
+      (err as unknown as { status: number }).status = 403;
       throw err;
     }
 
