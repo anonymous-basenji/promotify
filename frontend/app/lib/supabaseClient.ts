@@ -8,22 +8,18 @@ if (supabaseUrl) {
 }
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error(
-    'Promotify One: Supabase configuration missing!\n' +
-      `VITE_SUPABASE_PROJECT_URL: ${supabaseUrl ? 'FOUND' : 'MISSING / EMPTY'}\n` +
-      `VITE_SUPABASE_ANON_PUBLIC_KEY: ${supabaseAnonKey ? 'FOUND' : 'MISSING / EMPTY'}\n` +
+  throw new Error(
+    'Promotify One: Missing required Supabase environment variables!\n' +
+      `VITE_SUPABASE_PROJECT_URL: ${supabaseUrl ? 'SET' : 'MISSING'}\n` +
+      `VITE_SUPABASE_ANON_PUBLIC_KEY: ${supabaseAnonKey ? 'SET' : 'MISSING'}\n` +
       'Please check your .env file in project root.'
   );
 }
 
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-anon-key',
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
-  }
-);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+});
