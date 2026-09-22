@@ -48,8 +48,8 @@ export const groupService = {
     }
 
     const role = await teamRepository.getMemberRole(group.team_id, userId);
-    if (!role) {
-      const err = new Error('You are not a member of this team');
+    if (role !== 'owner' && role !== 'admin') {
+      const err = new Error('Only team admins can update groups');
       (err as unknown as { status: number }).status = 403;
       throw err;
     }
@@ -66,8 +66,8 @@ export const groupService = {
     }
 
     const role = await teamRepository.getMemberRole(group.team_id, userId);
-    if (!role) {
-      const err = new Error('You are not a member of this team');
+    if (role !== 'owner' && role !== 'admin') {
+      const err = new Error('Only team admins can delete groups');
       (err as unknown as { status: number }).status = 403;
       throw err;
     }
