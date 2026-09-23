@@ -456,6 +456,13 @@
   background: rgba(244, 63, 94, 0.22);
 }
 
+.btn-mark-posted:disabled,
+.btn-undo-post:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .btn-mark-posted-again {
   padding: 8px 12px;
   font-size: 0.825rem;

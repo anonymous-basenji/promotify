@@ -88,6 +88,11 @@ export default function TeamDashboard() {
     Saturday: true,
   });
   const [isSavingGroup, setIsSavingGroup] = useState(false);
+  const [postingGroupIds, setPostingGroupIds] = useState<Record<string, boolean>>({});
+  const [unmarkingGroupIds, setUnmarkingGroupIds] = useState<Record<string, boolean>>({});
+  const [resettingGroupIds, setResettingGroupIds] = useState<Record<string, boolean>>({});
+  const [deletingGroupIds, setDeletingGroupIds] = useState<Record<string, boolean>>({});
+  const [deletingSnippetId, setDeletingSnippetId] = useState<string | null>(null);
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
   const todayDayName = useMemo<DayOfWeek>(() => {
@@ -255,6 +260,7 @@ export default function TeamDashboard() {
     if (!teamId) return;
     if (!confirm(`Are you sure you want to delete snippet "${title}"?`)) return;
 
+    setDeletingSnippetId(snippetId);
     try {
       await apiFetch<{ success: boolean }>(`/api/teams/${teamId}/snippets/${snippetId}`, {
         method: 'DELETE',
@@ -263,6 +269,8 @@ export default function TeamDashboard() {
       triggerToast('Snippet deleted.');
     } catch (err: unknown) {
       setErrorMsg((err as Error).message);
+    } finally {
+      setDeletingSnippetId(null);
     }
   };
 
@@ -467,6 +475,7 @@ export default function TeamDashboard() {
       return;
     }
 
+    setResettingGroupIds((prev) => ({ ...prev, [groupId]: true }));
     try {
       await apiFetch<{ success: boolean }>(`/api/groups/${groupId}/posts`, {
         method: 'DELETE',
@@ -475,6 +484,12 @@ export default function TeamDashboard() {
       triggerToast(`Post history reset for "${groupName}"! 🔄`);
     } catch (err: unknown) {
       setErrorMsg((err as Error).message);
+    } finally {
+      setResettingGroupIds((prev) => {
+        const next = { ...prev };
+        delete next[groupId];
+        return next;
+      });
     }
   };
 
@@ -483,6 +498,7 @@ export default function TeamDashboard() {
       return;
     }
 
+    setDeletingGroupIds((prev) => ({ ...prev, [groupId]: true }));
     try {
       await apiFetch<{ success: boolean }>(`/api/groups/${groupId}`, {
         method: 'DELETE',
@@ -491,12 +507,19 @@ export default function TeamDashboard() {
       triggerToast('Group deleted.');
     } catch (err: unknown) {
       setErrorMsg((err as Error).message);
+    } finally {
+      setDeletingGroupIds((prev) => {
+        const next = { ...prev };
+        delete next[groupId];
+        return next;
+      });
     }
   };
 
   const handleMarkPosted = async (groupId: string) => {
-    if (!teamId || !user) return;
+    if (!teamId || !user || postingGroupIds[groupId]) return;
 
+    setPostingGroupIds((prev) => ({ ...prev, [groupId]: true }));
     try {
       const newLog = await apiFetch<PostLog>(`/api/teams/${teamId}/posts`, {
         method: 'POST',
@@ -513,14 +536,21 @@ export default function TeamDashboard() {
       triggerToast('Post recorded! 🎉');
     } catch (err: unknown) {
       setErrorMsg((err as Error).message);
+    } finally {
+      setPostingGroupIds((prev) => {
+        const next = { ...prev };
+        delete next[groupId];
+        return next;
+      });
     }
   };
 
   const handleUnmarkPosted = async (groupId: string) => {
     const logs = todayPosts[groupId];
-    if (!logs || logs.length === 0) return;
+    if (!logs || logs.length === 0 || unmarkingGroupIds[groupId]) return;
 
     const latestLog = logs[0];
+    setUnmarkingGroupIds((prev) => ({ ...prev, [groupId]: true }));
     try {
       await apiFetch<{ success: boolean }>(`/api/posts/${latestLog.post_log_id}`, {
         method: 'DELETE',
@@ -542,6 +572,12 @@ export default function TeamDashboard() {
       triggerToast('Last post unmarked. ↩');
     } catch (err: unknown) {
       setErrorMsg((err as Error).message);
+    } finally {
+      setUnmarkingGroupIds((prev) => {
+        const next = { ...prev };
+        delete next[groupId];
+        return next;
+      });
     }
   };
 
@@ -823,10 +859,15 @@ export default function TeamDashboard() {
                       </button>
                       <button
                         onClick={() => handleDeleteSnippet(activeSnippet.team_snippet_id, activeSnippet.title)}
+                        disabled={deletingSnippetId === activeSnippet.team_snippet_id}
                         className="btn-icon text-danger"
                         title="Delete text"
                       >
-                        <Trash2 size={14} />
+                        {deletingSnippetId === activeSnippet.team_snippet_id ? (
+                          <Loader2 size={14} className="spin" />
+                        ) : (
+                          <Trash2 size={14} />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -1063,29 +1104,58 @@ export default function TeamDashboard() {
                           <>
                             <button
                               onClick={() => handleUnmarkPosted(group.facebook_group_id)}
+                              disabled={
+                                unmarkingGroupIds[group.facebook_group_id] ||
+                                postingGroupIds[group.facebook_group_id]
+                              }
                               className="btn-undo-post"
                               title="Undo last logged post for today (LIFO)"
                             >
-                              <Undo size={14} />
+                              {unmarkingGroupIds[group.facebook_group_id] ? (
+                                <Loader2 size={14} className="spin" />
+                              ) : (
+                                <Undo size={14} />
+                              )}
                               <span>Undo</span>
                             </button>
                             <button
                               onClick={() => handleMarkPosted(group.facebook_group_id)}
+                              disabled={
+                                postingGroupIds[group.facebook_group_id] ||
+                                unmarkingGroupIds[group.facebook_group_id]
+                              }
                               className="btn-mark-posted btn-mark-posted-again"
                               title="Log another post for this group today"
                             >
-                              <Plus size={14} />
-                              <span>Post Again</span>
+                              {postingGroupIds[group.facebook_group_id] ? (
+                                <Loader2 size={14} className="spin" />
+                              ) : (
+                                <Plus size={14} />
+                              )}
+                              <span>
+                                {postingGroupIds[group.facebook_group_id]
+                                  ? 'Logging...'
+                                  : 'Post Again'}
+                              </span>
                             </button>
                           </>
                         ) : (
                           <button
                             onClick={() => handleMarkPosted(group.facebook_group_id)}
+                            disabled={postingGroupIds[group.facebook_group_id]}
                             className="btn-mark-posted"
                             title="Mark this group as posted for today"
                           >
-                            <Check size={16} />
-                            <span>Mark Posted</span>
+                            {postingGroupIds[group.facebook_group_id] ? (
+                              <Loader2 size={16} className="spin" />
+                            ) : (
+                              <Check size={16} />
+                            )}
+                            <span>
+                              {postingGroupIds[group.facebook_group_id]
+                                ? 'Logging...'
+                                : 'Mark Posted'}
+                            </span>
                           </button>
                         )}
                       </div>
@@ -1096,10 +1166,15 @@ export default function TeamDashboard() {
                             onClick={() =>
                               handleResetGroupPosts(group.facebook_group_id, group.name)
                             }
+                            disabled={resettingGroupIds[group.facebook_group_id]}
                             className="btn-icon"
                             title={`Reset post counts for "${group.name}"`}
                           >
-                            <RotateCcw size={14} />
+                            {resettingGroupIds[group.facebook_group_id] ? (
+                              <Loader2 size={14} className="spin" />
+                            ) : (
+                              <RotateCcw size={14} />
+                            )}
                           </button>
                         )}
                         <button
@@ -1113,10 +1188,15 @@ export default function TeamDashboard() {
                           onClick={() =>
                             handleDeleteGroup(group.facebook_group_id, group.name)
                           }
+                          disabled={deletingGroupIds[group.facebook_group_id]}
                           className="btn-icon btn-danger-soft"
                           title="Delete group"
                         >
-                          <Trash2 size={14} />
+                          {deletingGroupIds[group.facebook_group_id] ? (
+                            <Loader2 size={14} className="spin" />
+                          ) : (
+                            <Trash2 size={14} />
+                          )}
                         </button>
                       </div>
                     </div>
