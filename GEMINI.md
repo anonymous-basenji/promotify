@@ -86,6 +86,7 @@ erDiagram
         text name
         text group_url
         text notes
+        int member_count
         _text allowed_days
         bool is_active
         timestamptz created_at
@@ -161,6 +162,7 @@ Tracked promotion destinations belonging to a team workspace.
 | `name` | `text` | NOT NULL | Facebook group title |
 | `group_url` | `text` | NOT NULL | Link to Facebook group |
 | `notes` | `text` | Nullable | Posting rules, limits, or admin instructions |
+| `member_count` | `int` | Nullable | Optional group member count |
 | `allowed_days` | `text[]` (`_text`) | NOT NULL, Default `'{}'::text[]` | Days allowed (Sunday-Saturday) |
 | `is_active` | `bool` | NOT NULL, Default `true` | Active status toggle |
 | `created_at` | `timestamptz` | NOT NULL, Default `now()` | Creation timestamp |

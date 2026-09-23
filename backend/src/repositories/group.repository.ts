@@ -5,6 +5,7 @@ export interface CreateGroupDTO {
   name: string;
   group_url?: string;
   notes?: string;
+  member_count?: number | null;
   allowed_days: DayOfWeek[];
 }
 
@@ -47,6 +48,7 @@ export const groupRepository = {
       name: row.name,
       group_url: row.group_url,
       notes: row.notes,
+      member_count: row.member_count ?? null,
       allowed_days: row.allowed_days as DayOfWeek[],
       is_active: row.is_active,
       created_at: row.created_at,
@@ -85,6 +87,7 @@ export const groupRepository = {
       name: data.name,
       group_url: data.group_url,
       notes: data.notes,
+      member_count: data.member_count ?? null,
       allowed_days: data.allowed_days as DayOfWeek[],
       is_active: data.is_active,
       created_at: data.created_at,
@@ -106,6 +109,7 @@ export const groupRepository = {
         name: dto.name.trim(),
         group_url: dto.group_url?.trim() || null,
         notes: dto.notes?.trim() || null,
+        member_count: dto.member_count ?? null,
         allowed_days: dto.allowed_days,
         is_active: true,
       })
@@ -130,6 +134,7 @@ export const groupRepository = {
       name: data.name,
       group_url: data.group_url,
       notes: data.notes,
+      member_count: data.member_count ?? null,
       allowed_days: data.allowed_days as DayOfWeek[],
       is_active: data.is_active,
       created_at: data.created_at,
@@ -148,6 +153,7 @@ export const groupRepository = {
     if (updates.name !== undefined) payload.name = updates.name.trim();
     if (updates.group_url !== undefined) payload.group_url = updates.group_url.trim() || null;
     if (updates.notes !== undefined) payload.notes = updates.notes.trim() || null;
+    if (updates.member_count !== undefined) payload.member_count = updates.member_count;
     if (updates.allowed_days !== undefined) payload.allowed_days = updates.allowed_days;
 
     const { error } = await supabaseAdmin

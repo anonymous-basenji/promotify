@@ -20,6 +20,7 @@ import {
   Layers,
   RotateCcw,
   FileText,
+  Users,
 } from 'lucide-react';
 import { useAuth } from '~/context/AuthContext';
 import { apiFetch } from '~/lib/api';
@@ -78,6 +79,7 @@ export default function TeamDashboard() {
   const [formName, setFormName] = useState('');
   const [formUrl, setFormUrl] = useState('');
   const [formNotes, setFormNotes] = useState('');
+  const [formMemberCount, setFormMemberCount] = useState<string>('');
   const [formDays, setFormDays] = useState<Record<DayOfWeek, boolean>>({
     Sunday: true,
     Monday: true,
@@ -306,6 +308,7 @@ export default function TeamDashboard() {
     setFormName('');
     setFormUrl('');
     setFormNotes('');
+    setFormMemberCount('');
     setFormDays({
       Sunday: true,
       Monday: true,
@@ -323,6 +326,7 @@ export default function TeamDashboard() {
     setFormName(group.name);
     setFormUrl(group.group_url || '');
     setFormNotes(group.notes || '');
+    setFormMemberCount(group.member_count != null ? String(group.member_count) : '');
     const daysMap: Record<DayOfWeek, boolean> = {
       Sunday: false,
       Monday: false,
@@ -350,6 +354,9 @@ export default function TeamDashboard() {
       (d) => formDays[d]
     );
 
+    const parsedMemberCount = formMemberCount.trim() !== '' ? parseInt(formMemberCount, 10) : null;
+    const memberCountPayload = parsedMemberCount !== null && !isNaN(parsedMemberCount) ? parsedMemberCount : null;
+
     try {
       if (editingGroup) {
         await apiFetch<{ success: boolean }>(
@@ -360,6 +367,7 @@ export default function TeamDashboard() {
               name: formName,
               group_url: formUrl,
               notes: formNotes,
+              member_count: memberCountPayload,
               allowed_days: selectedAllowedDays,
             }),
           }
@@ -372,6 +380,7 @@ export default function TeamDashboard() {
             name: formName,
             group_url: formUrl,
             notes: formNotes,
+            member_count: memberCountPayload,
             allowed_days: selectedAllowedDays,
           }),
         });
@@ -614,10 +623,11 @@ export default function TeamDashboard() {
     });
 
     return list.sort((a, b) => {
-      const aRestricted = a.allowed_days.length < 7 || Boolean(a.notes && a.notes.trim());
-      const bRestricted = b.allowed_days.length < 7 || Boolean(b.notes && b.notes.trim());
-      if (aRestricted && !bRestricted) return -1;
-      if (!aRestricted && bRestricted) return 1;
+      const countA = a.member_count ?? -1;
+      const countB = b.member_count ?? -1;
+      if (countB !== countA) {
+        return countB - countA;
+      }
       return a.name.localeCompare(b.name);
     });
   }, [groups, searchQuery, selectedFilter, activeDayName, showRestrictedOnly]);
@@ -1062,6 +1072,13 @@ export default function TeamDashboard() {
                           Added by {creatorName}
                         </span>
 
+                        {group.member_count != null && (
+                          <span className="meta-chip member-chip" title="Group members">
+                            <Users size={12} />
+                            <span>{group.member_count.toLocaleString()} members</span>
+                          </span>
+                        )}
+
                         <button
                           onClick={() => setHistoryDrawerGroup(group)}
                           className="meta-chip history-chip"
@@ -1259,6 +1276,18 @@ export default function TeamDashboard() {
                     placeholder="e.g. Only post in weekly admin promo thread"
                     value={formNotes}
                     onChange={(e) => setFormNotes(e.target.value)}
+                    className="input-field"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Member Count (Optional)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 15000"
+                    value={formMemberCount}
+                    onChange={(e) => setFormMemberCount(e.target.value)}
                     className="input-field"
                   />
                 </div>

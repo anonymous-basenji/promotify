@@ -358,6 +358,12 @@
   gap: 5px;
 }
 
+.member-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
 .history-chip:hover {
   background: var(--bg-card-hover);
   color: var(--text-primary);
