@@ -31,6 +31,7 @@ const createGroupSchema = z.object({
   name: z.string().trim().min(1, 'Group name is required').max(150, 'Group name cannot exceed 150 characters'),
   group_url: z.string().trim().max(1000, 'URL cannot exceed 1000 characters').nullish().transform(val => val ?? undefined),
   notes: z.string().trim().max(2000, 'Notes cannot exceed 2000 characters').nullish().transform(val => val ?? undefined),
+  member_count: z.number().int().nonnegative().nullish().transform(val => val ?? null),
   allowed_days: z.array(daysOfWeekEnum).optional().default([
     'Sunday',
     'Monday',
@@ -46,6 +47,7 @@ const updateGroupSchema = z.object({
   name: z.string().trim().min(1, 'Group name cannot be empty').max(150, 'Group name cannot exceed 150 characters').optional(),
   group_url: z.string().trim().max(1000, 'URL cannot exceed 1000 characters').nullish().transform(val => val ?? undefined),
   notes: z.string().trim().max(2000, 'Notes cannot exceed 2000 characters').nullish().transform(val => val ?? undefined),
+  member_count: z.number().int().nonnegative().nullish().transform(val => val ?? null),
   allowed_days: z.array(daysOfWeekEnum).optional(),
 });
 

@@ -57,6 +57,7 @@ export interface FacebookGroup {
   name: string;
   group_url?: string | null;
   notes?: string | null;
+  member_count?: number | null;
   allowed_days: DayOfWeek[];
   is_active: boolean;
   created_at: string;

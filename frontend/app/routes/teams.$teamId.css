@@ -358,6 +358,12 @@
   gap: 5px;
 }
 
+.member-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
 .history-chip:hover {
   background: var(--bg-card-hover);
   color: var(--text-primary);
@@ -454,6 +460,13 @@
 
 .btn-undo-post:hover {
   background: rgba(244, 63, 94, 0.22);
+}
+
+.btn-mark-posted:disabled,
+.btn-undo-post:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .btn-mark-posted-again {
