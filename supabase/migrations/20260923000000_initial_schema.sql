@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS public.facebook_groups (
   team_id UUID NOT NULL REFERENCES public.teams(team_id) ON DELETE CASCADE,
   user_id UUID REFERENCES public.profiles(user_id) ON DELETE SET NULL,
   name TEXT NOT NULL,
-  group_url TEXT NOT NULL DEFAULT '',
+  group_url TEXT,
   notes TEXT,
   member_count INT,
   allowed_days TEXT[] NOT NULL DEFAULT '{}'::TEXT[],
