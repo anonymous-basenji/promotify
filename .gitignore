@@ -29,3 +29,7 @@ android/.gradle/
 android/build/
 android/app/build/
 .vercel
+
+# Supabase
+/supabase/.branches
+/supabase/.temp
