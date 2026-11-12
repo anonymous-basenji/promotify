@@ -130,6 +130,12 @@ export const teamService = {
       throw err;
     }
 
+    if (role === 'owner' && requesterRole !== 'owner') {
+      const err = new Error('Only the team owner can invite another owner');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
     const cleanEmail = email.trim().toLowerCase();
     const profile = await profileRepository.findByEmail(cleanEmail);
 
