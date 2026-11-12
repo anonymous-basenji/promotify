@@ -96,7 +96,8 @@ export default function TeamDashboard() {
   const [deletingGroupIds, setDeletingGroupIds] = useState<Record<string, boolean>>({});
   const [deletingSnippetId, setDeletingSnippetId] = useState<string | null>(null);
 
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  // Local date as YYYY-MM-DD (en-CA formats that way); toISOString would give the UTC date
+  const todayStr = useMemo(() => new Date().toLocaleDateString('en-CA'), []);
   const todayDayName = useMemo<DayOfWeek>(() => {
     const dayIndex = new Date().getDay();
     return DAYS_OF_WEEK[dayIndex];
