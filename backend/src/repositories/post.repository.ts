@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../config/supabase.js';
+import { db } from '../config/supabase.js';
 import type { PostLog, Profile } from '../types/backend.types.js';
 
 export const postRepository = {
@@ -6,7 +6,7 @@ export const postRepository = {
     teamId: string,
     dateStr: string
   ): Promise<Record<string, PostLog[]>> {
-    const { data: postRows, error: postError } = await supabaseAdmin
+    const { data: postRows, error: postError } = await db()
       .from('post_logs')
       .select('*')
       .eq('team_id', teamId)
@@ -26,7 +26,7 @@ export const postRepository = {
 
     const profileMap: Record<string, Profile> = {};
     if (userIds.length > 0) {
-      const { data: profiles } = await supabaseAdmin
+      const { data: profiles } = await db()
         .from('profiles')
         .select('*')
         .in('user_id', userIds);
@@ -58,7 +58,7 @@ export const postRepository = {
   },
 
   async getPostCountsByTeam(teamId: string): Promise<Record<string, number>> {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('post_logs')
       .select('facebook_group_id')
       .eq('team_id', teamId);
@@ -77,7 +77,7 @@ export const postRepository = {
   },
 
   async findHistoryByGroup(groupId: string): Promise<PostLog[]> {
-    const { data: postRows, error: postError } = await supabaseAdmin
+    const { data: postRows, error: postError } = await db()
       .from('post_logs')
       .select('*')
       .eq('facebook_group_id', groupId)
@@ -96,7 +96,7 @@ export const postRepository = {
 
     const profileMap: Record<string, Profile> = {};
     if (userIds.length > 0) {
-      const { data: profiles } = await supabaseAdmin
+      const { data: profiles } = await db()
         .from('profiles')
         .select('*')
         .in('user_id', userIds);
@@ -127,7 +127,7 @@ export const postRepository = {
     notes?: string;
     postUrl?: string;
   }): Promise<PostLog> {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('post_logs')
       .insert({
         facebook_group_id: postData.groupId,
@@ -145,7 +145,7 @@ export const postRepository = {
       throw new Error(error?.message || 'Failed to log post');
     }
 
-    const { data: profile } = await supabaseAdmin
+    const { data: profile } = await db()
       .from('profiles')
       .select('*')
       .eq('user_id', postData.userId)
@@ -165,7 +165,7 @@ export const postRepository = {
   },
 
   async delete(postLogId: string): Promise<void> {
-    const { error } = await supabaseAdmin
+    const { error } = await db()
       .from('post_logs')
       .delete()
       .eq('post_log_id', postLogId);
@@ -177,7 +177,7 @@ export const postRepository = {
   },
 
   async findById(postLogId: string): Promise<PostLog | null> {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('post_logs')
       .select('*')
       .eq('post_log_id', postLogId)
@@ -191,7 +191,7 @@ export const postRepository = {
   },
 
   async deleteAllByTeam(teamId: string): Promise<void> {
-    const { error } = await supabaseAdmin
+    const { error } = await db()
       .from('post_logs')
       .delete()
       .eq('team_id', teamId);
@@ -203,7 +203,7 @@ export const postRepository = {
   },
 
   async deleteAllByGroup(groupId: string): Promise<void> {
-    const { error } = await supabaseAdmin
+    const { error } = await db()
       .from('post_logs')
       .delete()
       .eq('facebook_group_id', groupId);
