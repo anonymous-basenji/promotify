@@ -208,7 +208,7 @@ promotify/
 │   │   └── types/            # Frontend interfaces
 │   ├── package.json
 │   └── tsconfig.json
-├── GEMINI.md                 # Agent context & schema documentation
+├── CLAUDE.md                 # Agent context & schema documentation
 ├── package.json              # Monorepo workspaces definition
 └── README.md
 ```
