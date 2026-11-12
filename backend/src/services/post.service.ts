@@ -66,6 +66,13 @@ export const postService = {
       throw err;
     }
 
+    const group = await groupRepository.findById(groupId);
+    if (!group || group.team_id !== teamId) {
+      const err = new Error('Group not found');
+      (err as unknown as { status: number }).status = 404;
+      throw err;
+    }
+
     return await postRepository.create({
       groupId,
       teamId,
