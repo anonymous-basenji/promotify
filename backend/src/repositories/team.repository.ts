@@ -253,6 +253,19 @@ export const teamRepository = {
     }
   },
 
+  async updateMemberRoleByUser(teamId: string, userId: string, newRole: TeamRole): Promise<void> {
+    const { error } = await db()
+      .from('team_members')
+      .update({ role: newRole })
+      .eq('team_id', teamId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error updating member role:', error);
+      throw new Error(error.message);
+    }
+  },
+
   async removeMember(teamMemberId: string): Promise<void> {
     const { error } = await db()
       .from('team_members')

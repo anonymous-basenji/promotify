@@ -76,6 +76,14 @@ export function TeamMembersModal({
   };
 
   const handleRoleChange = async (member: TeamMember, newRole: TeamRole) => {
+    const isTransfer = newRole === 'owner';
+    if (isTransfer) {
+      const memberName = member.profile?.full_name || member.profile?.email || 'this member';
+      if (!confirm(`Transfer ownership of ${teamName} to ${memberName}? You will become an admin.`)) {
+        return;
+      }
+    }
+
     try {
       await apiFetch<{ success: boolean }>(
         `/api/teams/${teamId}/members/${member.team_member_id}`,
@@ -84,6 +92,11 @@ export function TeamMembersModal({
           body: JSON.stringify({ role: newRole }),
         }
       );
+      if (isTransfer) {
+        // The current user's role changed too, and the page's role-based controls depend on it
+        window.location.reload();
+        return;
+      }
       setMembers((prev) =>
         prev.map((m) =>
           m.team_member_id === member.team_member_id ? { ...m, role: newRole } : m

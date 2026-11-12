@@ -195,6 +195,12 @@ export const teamService = {
     }
 
     await teamRepository.updateMemberRole(teamMemberId, newRole);
+
+    // Transferring ownership hands it over: the previous owner becomes an admin.
+    // Promote first, so the requester is still an owner when demoting their own row.
+    if (newRole === 'owner') {
+      await teamRepository.updateMemberRoleByUser(teamId, requestingUserId, 'admin');
+    }
   },
 
   async removeMember(
