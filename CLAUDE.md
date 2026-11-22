@@ -187,6 +187,8 @@ Historical log entries created when a team member marks a group as posted.
 
 ```
 promotify/
+├── api/
+│   └── index.ts              # Vercel serverless entry; re-exports the Express app
 ├── backend/
 │   ├── src/
 │   │   ├── config/           # Supabase client & environment configuration
@@ -196,8 +198,10 @@ promotify/
 │   │   ├── routes/           # REST endpoints (/api/teams, /api/groups, /api/posts)
 │   │   ├── services/         # Business logic, permissions, role authorization
 │   │   ├── types/            # TypeScript domain interfaces
+│   │   ├── utils/            # Shared helpers (handleError)
 │   │   └── index.ts          # Express application entry point
 │   ├── package.json
+│   ├── README.md             # Backend API reference
 │   └── tsconfig.json
 ├── frontend/
 │   ├── app/
@@ -208,6 +212,9 @@ promotify/
 │   │   └── types/            # Frontend interfaces
 │   ├── package.json
 │   └── tsconfig.json
+├── supabase/
+│   ├── config.toml           # Local Supabase stack config
+│   └── migrations/           # SQL schema & RLS policy migrations
 ├── CLAUDE.md                 # Agent context & schema documentation
 ├── package.json              # Monorepo workspaces definition
 └── README.md

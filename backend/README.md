@@ -197,6 +197,7 @@ Rules for adding and changing members:
 - To be added, a user must already have a profile, which means they've signed in at least once. Otherwise the response is `404`.
 - Nobody can change their own role.
 - Only an owner can make someone `owner` or change an existing owner's role.
+- Making someone `owner` transfers ownership: the previous owner becomes an `admin`.
 
 ### Facebook groups
 
