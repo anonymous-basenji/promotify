@@ -156,26 +156,42 @@ export const groupRepository = {
     if (updates.member_count !== undefined) payload.member_count = updates.member_count;
     if (updates.allowed_days !== undefined) payload.allowed_days = updates.allowed_days;
 
-    const { error } = await db()
+    const { data, error } = await db()
       .from('facebook_groups')
       .update(payload)
-      .eq('facebook_group_id', groupId);
+      .eq('facebook_group_id', groupId)
+      .select('facebook_group_id');
 
     if (error) {
       console.error('Error updating group:', error);
       throw new Error(error.message);
     }
+
+    // RLS silently skips rows it blocks
+    if (!data || data.length === 0) {
+      const err = new Error('You do not have permission to edit this group');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
   },
 
   async delete(groupId: string): Promise<void> {
-    const { error } = await db()
+    const { data, error } = await db()
       .from('facebook_groups')
       .delete()
-      .eq('facebook_group_id', groupId);
+      .eq('facebook_group_id', groupId)
+      .select('facebook_group_id');
 
     if (error) {
       console.error('Error deleting group:', error);
       throw new Error(error.message);
+    }
+
+    // RLS silently skips rows it blocks
+    if (!data || data.length === 0) {
+      const err = new Error('You do not have permission to delete this group');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
     }
   },
 };

@@ -140,6 +140,12 @@ export const postRepository = {
       .select()
       .single();
 
+    if (error?.code === '23505') {
+      const err = new Error('This post URL is already logged for this group');
+      (err as unknown as { status: number }).status = 409;
+      throw err;
+    }
+
     if (error || !data) {
       console.error('Error creating post log:', error);
       throw new Error(error?.message || 'Failed to log post');
@@ -165,14 +171,22 @@ export const postRepository = {
   },
 
   async delete(postLogId: string): Promise<void> {
-    const { error } = await db()
+    const { data, error } = await db()
       .from('post_logs')
       .delete()
-      .eq('post_log_id', postLogId);
+      .eq('post_log_id', postLogId)
+      .select('post_log_id');
 
     if (error) {
       console.error('Error deleting post log:', error);
       throw new Error(error.message);
+    }
+
+    // RLS silently skips rows it blocks
+    if (!data || data.length === 0) {
+      const err = new Error('You do not have permission to delete this post log');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
     }
   },
 

@@ -124,14 +124,22 @@ export const teamRepository = {
   },
 
   async updatePromoText(teamId: string, promoText: string): Promise<void> {
-    const { error } = await db()
+    const { data, error } = await db()
       .from('teams')
       .update({ promo_text: promoText, updated_at: new Date().toISOString() })
-      .eq('team_id', teamId);
+      .eq('team_id', teamId)
+      .select('team_id');
 
     if (error) {
       console.error('Error updating promo text:', error);
       throw new Error(error.message);
+    }
+
+    // RLS silently skips rows it blocks
+    if (!data || data.length === 0) {
+      const err = new Error('Only team admins can edit the promo text');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
     }
   },
 
@@ -242,39 +250,63 @@ export const teamRepository = {
   },
 
   async updateMemberRole(teamMemberId: string, newRole: TeamRole): Promise<void> {
-    const { error } = await db()
+    const { data, error } = await db()
       .from('team_members')
       .update({ role: newRole })
-      .eq('team_member_id', teamMemberId);
+      .eq('team_member_id', teamMemberId)
+      .select('team_member_id');
 
     if (error) {
       console.error('Error updating member role:', error);
       throw new Error(error.message);
+    }
+
+    // RLS silently skips rows it blocks
+    if (!data || data.length === 0) {
+      const err = new Error('You do not have permission to change this member role');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
     }
   },
 
   async updateMemberRoleByUser(teamId: string, userId: string, newRole: TeamRole): Promise<void> {
-    const { error } = await db()
+    const { data, error } = await db()
       .from('team_members')
       .update({ role: newRole })
       .eq('team_id', teamId)
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .select('team_member_id');
 
     if (error) {
       console.error('Error updating member role:', error);
       throw new Error(error.message);
     }
+
+    // RLS silently skips rows it blocks
+    if (!data || data.length === 0) {
+      const err = new Error('You do not have permission to change this member role');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
   },
 
   async removeMember(teamMemberId: string): Promise<void> {
-    const { error } = await db()
+    const { data, error } = await db()
       .from('team_members')
       .delete()
-      .eq('team_member_id', teamMemberId);
+      .eq('team_member_id', teamMemberId)
+      .select('team_member_id');
 
     if (error) {
       console.error('Error removing member:', error);
       throw new Error(error.message);
+    }
+
+    // RLS silently skips rows it blocks
+    if (!data || data.length === 0) {
+      const err = new Error('You do not have permission to remove this member');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
     }
   },
 
@@ -352,14 +384,22 @@ export const teamRepository = {
   },
 
   async deleteSnippet(snippetId: string): Promise<void> {
-    const { error } = await db()
+    const { data, error } = await db()
       .from('team_snippets')
       .delete()
-      .eq('team_snippet_id', snippetId);
+      .eq('team_snippet_id', snippetId)
+      .select('team_snippet_id');
 
     if (error) {
       console.error('Error deleting snippet:', error);
       throw new Error(error.message);
+    }
+
+    // RLS silently skips rows it blocks
+    if (!data || data.length === 0) {
+      const err = new Error('You do not have permission to delete this snippet');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
     }
   },
 
