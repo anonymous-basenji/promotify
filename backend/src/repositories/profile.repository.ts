@@ -1,9 +1,9 @@
-import { supabaseAdmin } from '../config/supabase.js';
+import { db } from '../config/supabase.js';
 import type { Profile } from '../types/backend.types.js';
 
 export const profileRepository = {
   async findByEmail(email: string): Promise<Profile | null> {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('profiles')
       .select('*')
       .ilike('email', email.trim())
@@ -14,7 +14,7 @@ export const profileRepository = {
   },
 
   async findById(userId: string): Promise<Profile | null> {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('profiles')
       .select('*')
       .eq('user_id', userId)
@@ -25,7 +25,7 @@ export const profileRepository = {
   },
 
   async upsert(profile: Profile): Promise<Profile> {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('profiles')
       .upsert(profile)
       .select()

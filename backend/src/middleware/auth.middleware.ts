@@ -1,5 +1,5 @@
 import type { Response, NextFunction } from 'express';
-import { supabaseAdmin } from '../config/supabase.js';
+import { supabaseAuth, createUserClient, runWithUserClient } from '../config/supabase.js';
 import type { AuthenticatedRequest } from '../types/backend.types.js';
 
 export async function requireAuth(
@@ -23,7 +23,7 @@ export async function requireAuth(
     const {
       data: { user },
       error,
-    } = await supabaseAdmin.auth.getUser(token);
+    } = await supabaseAuth.auth.getUser(token);
 
     if (error || !user) {
       res.status(401).json({ error: error?.message || 'Invalid or expired session token' });
@@ -35,7 +35,7 @@ export async function requireAuth(
       email: user.email || '',
     };
 
-    next();
+    runWithUserClient(createUserClient(token), next);
   } catch (err: unknown) {
     console.error('Auth middleware error:', err);
     res.status(500).json({ error: 'Internal auth verification error' });

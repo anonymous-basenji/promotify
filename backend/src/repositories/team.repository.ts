@@ -1,9 +1,9 @@
-import { supabaseAdmin } from '../config/supabase.js';
+import { db } from '../config/supabase.js';
 import type { Team, TeamMember, TeamRole, Profile, TeamSnippet } from '../types/backend.types.js';
 
 export const teamRepository = {
   async findByUserId(userId: string): Promise<Team[]> {
-    const { data: memberRows, error: memberError } = await supabaseAdmin
+    const { data: memberRows, error: memberError } = await db()
       .from('team_members')
       .select('team_id, role')
       .eq('user_id', userId);
@@ -21,7 +21,7 @@ export const teamRepository = {
       return r.team_id;
     });
 
-    const { data: teamRows, error: teamError } = await supabaseAdmin
+    const { data: teamRows, error: teamError } = await db()
       .from('teams')
       .select('*')
       .in('team_id', teamIds);
@@ -38,7 +38,7 @@ export const teamRepository = {
   },
 
   async findById(teamId: string): Promise<Team | null> {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('teams')
       .select('*')
       .eq('team_id', teamId)
@@ -57,7 +57,7 @@ export const teamRepository = {
     promo_text?: string;
     user_id: string;
   }): Promise<Team> {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('teams')
       .insert({
         name: teamData.name.trim(),
@@ -88,7 +88,7 @@ export const teamRepository = {
     }
     if (data.promo_text !== undefined) updatePayload.promo_text = data.promo_text;
 
-    const { data: updated, error } = await supabaseAdmin
+    const { data: updated, error } = await db()
       .from('teams')
       .update(updatePayload)
       .eq('team_id', teamId)
@@ -103,35 +103,48 @@ export const teamRepository = {
   },
 
   async delete(teamId: string): Promise<void> {
-    await supabaseAdmin.from('post_logs').delete().eq('team_id', teamId);
-    await supabaseAdmin.from('facebook_groups').delete().eq('team_id', teamId);
-    await supabaseAdmin.from('team_members').delete().eq('team_id', teamId);
-
-    const { error } = await supabaseAdmin
+    // post_logs, facebook_groups, team_members and team_snippets cascade on team_id
+    const { data, error } = await db()
       .from('teams')
       .delete()
-      .eq('team_id', teamId);
+      .eq('team_id', teamId)
+      .select('team_id');
 
     if (error) {
       console.error('Error deleting team:', error);
       throw new Error(error.message);
     }
+
+    // RLS silently skips rows it blocks
+    if (!data || data.length === 0) {
+      const err = new Error('Only team owners can delete this workspace');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
   },
 
   async updatePromoText(teamId: string, promoText: string): Promise<void> {
-    const { error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('teams')
       .update({ promo_text: promoText, updated_at: new Date().toISOString() })
-      .eq('team_id', teamId);
+      .eq('team_id', teamId)
+      .select('team_id');
 
     if (error) {
       console.error('Error updating promo text:', error);
       throw new Error(error.message);
     }
+
+    // RLS silently skips rows it blocks
+    if (!data || data.length === 0) {
+      const err = new Error('Only team admins can edit the promo text');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
   },
 
   async getMemberRole(teamId: string, userId: string): Promise<TeamRole | null> {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('team_members')
       .select('role')
       .eq('team_id', teamId)
@@ -146,7 +159,7 @@ export const teamRepository = {
   },
 
   async getMembers(teamId: string): Promise<TeamMember[]> {
-    const { data: memberRows, error: memberError } = await supabaseAdmin
+    const { data: memberRows, error: memberError } = await db()
       .from('team_members')
       .select('*')
       .eq('team_id', teamId);
@@ -159,7 +172,7 @@ export const teamRepository = {
     if (!memberRows || memberRows.length === 0) return [];
 
     const userIds = memberRows.map((m) => m.user_id);
-    const { data: profiles, error: profileError } = await supabaseAdmin
+    const { data: profiles, error: profileError } = await db()
       .from('profiles')
       .select('*')
       .in('user_id', userIds);
@@ -188,25 +201,39 @@ export const teamRepository = {
     userId: string,
     role: TeamRole = 'member'
   ): Promise<TeamMember> {
-    const { data, error } = await supabaseAdmin
+    // Insert and read back separately: when a creator adds themselves, the SELECT
+    // policy (is_team_member) can't see the new row inside the same INSERT ... RETURNING
+    const { error: insertError } = await db()
       .from('team_members')
       .insert({
         team_id: teamId,
         user_id: userId,
         role: role,
-      })
-      .select()
+      });
+
+    if (insertError) {
+      if (insertError.code === '23505') {
+        const err = new Error('This user is already a member of this team.');
+        (err as unknown as { status: number }).status = 409;
+        throw err;
+      }
+      console.error('Error adding member:', insertError);
+      throw new Error(insertError.message || 'Failed to add team member');
+    }
+
+    const { data, error } = await db()
+      .from('team_members')
+      .select('*')
+      .eq('team_id', teamId)
+      .eq('user_id', userId)
       .single();
 
     if (error || !data) {
-      if (error?.code === '23505') {
-        throw new Error('This user is already a member of this team.');
-      }
-      console.error('Error adding member:', error);
+      console.error('Error reading back new member:', error);
       throw new Error(error?.message || 'Failed to add team member');
     }
 
-    const { data: profile } = await supabaseAdmin
+    const { data: profile } = await db()
       .from('profiles')
       .select('*')
       .eq('user_id', userId)
@@ -223,31 +250,68 @@ export const teamRepository = {
   },
 
   async updateMemberRole(teamMemberId: string, newRole: TeamRole): Promise<void> {
-    const { error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('team_members')
       .update({ role: newRole })
-      .eq('team_member_id', teamMemberId);
+      .eq('team_member_id', teamMemberId)
+      .select('team_member_id');
 
     if (error) {
       console.error('Error updating member role:', error);
       throw new Error(error.message);
     }
+
+    // RLS silently skips rows it blocks
+    if (!data || data.length === 0) {
+      const err = new Error('You do not have permission to change this member role');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+  },
+
+  async updateMemberRoleByUser(teamId: string, userId: string, newRole: TeamRole): Promise<void> {
+    const { data, error } = await db()
+      .from('team_members')
+      .update({ role: newRole })
+      .eq('team_id', teamId)
+      .eq('user_id', userId)
+      .select('team_member_id');
+
+    if (error) {
+      console.error('Error updating member role:', error);
+      throw new Error(error.message);
+    }
+
+    // RLS silently skips rows it blocks
+    if (!data || data.length === 0) {
+      const err = new Error('You do not have permission to change this member role');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
   },
 
   async removeMember(teamMemberId: string): Promise<void> {
-    const { error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('team_members')
       .delete()
-      .eq('team_member_id', teamMemberId);
+      .eq('team_member_id', teamMemberId)
+      .select('team_member_id');
 
     if (error) {
       console.error('Error removing member:', error);
       throw new Error(error.message);
     }
+
+    // RLS silently skips rows it blocks
+    if (!data || data.length === 0) {
+      const err = new Error('You do not have permission to remove this member');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
   },
 
   async getMemberById(teamMemberId: string): Promise<TeamMember | null> {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('team_members')
       .select('*')
       .eq('team_member_id', teamMemberId)
@@ -261,7 +325,7 @@ export const teamRepository = {
   },
 
   async getSnippets(teamId: string): Promise<TeamSnippet[]> {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('team_snippets')
       .select('*')
       .eq('team_id', teamId)
@@ -280,7 +344,7 @@ export const teamRepository = {
     title: string;
     content: string;
   }): Promise<TeamSnippet> {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('team_snippets')
       .insert({
         team_id: snippetData.team_id,
@@ -302,7 +366,7 @@ export const teamRepository = {
     snippetId: string,
     snippetData: { title?: string; content?: string }
   ): Promise<TeamSnippet> {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('team_snippets')
       .update({
         ...snippetData,
@@ -320,19 +384,27 @@ export const teamRepository = {
   },
 
   async deleteSnippet(snippetId: string): Promise<void> {
-    const { error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('team_snippets')
       .delete()
-      .eq('team_snippet_id', snippetId);
+      .eq('team_snippet_id', snippetId)
+      .select('team_snippet_id');
 
     if (error) {
       console.error('Error deleting snippet:', error);
       throw new Error(error.message);
     }
+
+    // RLS silently skips rows it blocks
+    if (!data || data.length === 0) {
+      const err = new Error('You do not have permission to delete this snippet');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
   },
 
   async getSnippetById(snippetId: string): Promise<TeamSnippet | null> {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('team_snippets')
       .select('*')
       .eq('team_snippet_id', snippetId)

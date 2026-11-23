@@ -97,8 +97,8 @@ export const teamService = {
     userId: string
   ): Promise<void> {
     const role = await teamRepository.getMemberRole(teamId, userId);
-    if (!role) {
-      const err = new Error('You are not a member of this team');
+    if (role !== 'owner' && role !== 'admin') {
+      const err = new Error('Only team admins can edit the promo text');
       (err as unknown as { status: number }).status = 403;
       throw err;
     }
@@ -126,6 +126,12 @@ export const teamService = {
     const requesterRole = await teamRepository.getMemberRole(teamId, requestingUserId);
     if (requesterRole !== 'owner' && requesterRole !== 'admin') {
       const err = new Error('Only team admins can invite members');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    if (role === 'owner' && requesterRole !== 'owner') {
+      const err = new Error('Only the team owner can invite another owner');
       (err as unknown as { status: number }).status = 403;
       throw err;
     }
@@ -189,6 +195,12 @@ export const teamService = {
     }
 
     await teamRepository.updateMemberRole(teamMemberId, newRole);
+
+    // Transferring ownership hands it over: the previous owner becomes an admin.
+    // Promote first, so the requester is still an owner when demoting their own row.
+    if (newRole === 'owner') {
+      await teamRepository.updateMemberRoleByUser(teamId, requestingUserId, 'admin');
+    }
   },
 
   async removeMember(
@@ -273,8 +285,8 @@ export const teamService = {
     userId: string
   ): Promise<TeamSnippet> {
     const role = await teamRepository.getMemberRole(teamId, userId);
-    if (!role) {
-      const err = new Error('You are not a member of this team');
+    if (role !== 'owner' && role !== 'admin') {
+      const err = new Error('Only team admins can edit saved texts');
       (err as unknown as { status: number }).status = 403;
       throw err;
     }
@@ -304,8 +316,8 @@ export const teamService = {
     userId: string
   ): Promise<void> {
     const role = await teamRepository.getMemberRole(teamId, userId);
-    if (!role) {
-      const err = new Error('You are not a member of this team');
+    if (role !== 'owner' && role !== 'admin') {
+      const err = new Error('Only team admins can delete saved texts');
       (err as unknown as { status: number }).status = 403;
       throw err;
     }

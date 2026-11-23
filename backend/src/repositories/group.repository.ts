@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../config/supabase.js';
+import { db } from '../config/supabase.js';
 import type { FacebookGroup, DayOfWeek, Profile } from '../types/backend.types.js';
 
 export interface CreateGroupDTO {
@@ -11,7 +11,7 @@ export interface CreateGroupDTO {
 
 export const groupRepository = {
   async findByTeamId(teamId: string): Promise<FacebookGroup[]> {
-    const { data: groupRows, error: groupError } = await supabaseAdmin
+    const { data: groupRows, error: groupError } = await db()
       .from('facebook_groups')
       .select('*')
       .eq('team_id', teamId)
@@ -31,7 +31,7 @@ export const groupRepository = {
 
     const profileMap: Record<string, Profile> = {};
     if (userIds.length > 0) {
-      const { data: profiles } = await supabaseAdmin
+      const { data: profiles } = await db()
         .from('profiles')
         .select('*')
         .in('user_id', userIds);
@@ -58,7 +58,7 @@ export const groupRepository = {
   },
 
   async findById(groupId: string): Promise<FacebookGroup | null> {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('facebook_groups')
       .select('*')
       .eq('facebook_group_id', groupId)
@@ -72,7 +72,7 @@ export const groupRepository = {
 
     let creatorProfile: Profile | undefined;
     if (data.user_id) {
-      const { data: profile } = await supabaseAdmin
+      const { data: profile } = await db()
         .from('profiles')
         .select('*')
         .eq('user_id', data.user_id)
@@ -101,7 +101,7 @@ export const groupRepository = {
     userId: string,
     dto: CreateGroupDTO
   ): Promise<FacebookGroup> {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('facebook_groups')
       .insert({
         team_id: teamId,
@@ -121,7 +121,7 @@ export const groupRepository = {
       throw new Error(error?.message || 'Failed to create group');
     }
 
-    const { data: profile } = await supabaseAdmin
+    const { data: profile } = await db()
       .from('profiles')
       .select('*')
       .eq('user_id', userId)
@@ -156,26 +156,42 @@ export const groupRepository = {
     if (updates.member_count !== undefined) payload.member_count = updates.member_count;
     if (updates.allowed_days !== undefined) payload.allowed_days = updates.allowed_days;
 
-    const { error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('facebook_groups')
       .update(payload)
-      .eq('facebook_group_id', groupId);
+      .eq('facebook_group_id', groupId)
+      .select('facebook_group_id');
 
     if (error) {
       console.error('Error updating group:', error);
       throw new Error(error.message);
     }
+
+    // RLS silently skips rows it blocks
+    if (!data || data.length === 0) {
+      const err = new Error('You do not have permission to edit this group');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
   },
 
   async delete(groupId: string): Promise<void> {
-    const { error } = await supabaseAdmin
+    const { data, error } = await db()
       .from('facebook_groups')
       .delete()
-      .eq('facebook_group_id', groupId);
+      .eq('facebook_group_id', groupId)
+      .select('facebook_group_id');
 
     if (error) {
       console.error('Error deleting group:', error);
       throw new Error(error.message);
+    }
+
+    // RLS silently skips rows it blocks
+    if (!data || data.length === 0) {
+      const err = new Error('You do not have permission to delete this group');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
     }
   },
 };
