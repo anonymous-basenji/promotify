@@ -97,8 +97,8 @@ export const teamService = {
     userId: string
   ): Promise<void> {
     const role = await teamRepository.getMemberRole(teamId, userId);
-    if (!role) {
-      const err = new Error('You are not a member of this team');
+    if (role !== 'owner' && role !== 'admin') {
+      const err = new Error('Only team admins can edit the promo text');
       (err as unknown as { status: number }).status = 403;
       throw err;
     }
@@ -285,8 +285,8 @@ export const teamService = {
     userId: string
   ): Promise<TeamSnippet> {
     const role = await teamRepository.getMemberRole(teamId, userId);
-    if (!role) {
-      const err = new Error('You are not a member of this team');
+    if (role !== 'owner' && role !== 'admin') {
+      const err = new Error('Only team admins can edit saved texts');
       (err as unknown as { status: number }).status = 403;
       throw err;
     }
@@ -316,8 +316,8 @@ export const teamService = {
     userId: string
   ): Promise<void> {
     const role = await teamRepository.getMemberRole(teamId, userId);
-    if (!role) {
-      const err = new Error('You are not a member of this team');
+    if (role !== 'owner' && role !== 'admin') {
+      const err = new Error('Only team admins can delete saved texts');
       (err as unknown as { status: number }).status = 403;
       throw err;
     }

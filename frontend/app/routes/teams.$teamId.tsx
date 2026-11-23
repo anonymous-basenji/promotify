@@ -37,6 +37,7 @@ export default function TeamDashboard() {
   const navigate = useNavigate();
 
   const [team, setTeam] = useState<Team | null>(null);
+  const isAdmin = team?.user_role === 'owner' || team?.user_role === 'admin';
   const [groups, setGroups] = useState<FacebookGroup[]>([]);
   const [todayPosts, setTodayPosts] = useState<Record<string, PostLog[]>>({});
   const [postCounts, setPostCounts] = useState<Record<string, number>>({});
@@ -715,7 +716,7 @@ export default function TeamDashboard() {
             </div>
           </div>
 
-          {(team.user_role === 'owner' || team.user_role === 'admin') && (
+          {isAdmin && (
             <button
               onClick={handleOpenSettingsModal}
               className="btn-secondary btn-sm"
@@ -757,14 +758,16 @@ export default function TeamDashboard() {
                 </>
               ) : (
                 <>
-                  <button
-                    onClick={() => setIsEditingPromo(true)}
-                    className="btn-secondary btn-sm"
-                    title="Edit promo template"
-                  >
-                    <Edit3 size={14} />
-                    <span>Edit Copy</span>
-                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setIsEditingPromo(true)}
+                      className="btn-secondary btn-sm"
+                      title="Edit promo template"
+                    >
+                      <Edit3 size={14} />
+                      <span>Edit Copy</span>
+                    </button>
+                  )}
                   <button
                     onClick={handleCopyPromoText}
                     className="btn-primary btn-sm copy-btn"
@@ -852,34 +855,38 @@ export default function TeamDashboard() {
                         <Copy size={13} />
                         <span>Copy</span>
                       </button>
-                      <button
-                        onClick={() => handleUseSnippetAsPromo(activeSnippet.content, activeSnippet.title)}
-                        className="btn-secondary btn-sm"
-                        title="Load into Main Promo Post Copy"
-                      >
-                        <Share2 size={13} />
-                        <span>Use as Promo</span>
-                      </button>
-                      <button
-                        onClick={() => handleOpenEditSnippet(activeSnippet)}
-                        className="btn-secondary btn-sm"
-                        title="Edit text"
-                      >
-                        <Edit3 size={13} />
-                        <span>Edit</span>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteSnippet(activeSnippet.team_snippet_id, activeSnippet.title)}
-                        disabled={deletingSnippetId === activeSnippet.team_snippet_id}
-                        className="btn-icon text-danger"
-                        title="Delete text"
-                      >
-                        {deletingSnippetId === activeSnippet.team_snippet_id ? (
-                          <Loader2 size={14} className="spin" />
-                        ) : (
-                          <Trash2 size={14} />
-                        )}
-                      </button>
+                      {isAdmin && (
+                        <>
+                          <button
+                            onClick={() => handleUseSnippetAsPromo(activeSnippet.content, activeSnippet.title)}
+                            className="btn-secondary btn-sm"
+                            title="Load into Main Promo Post Copy"
+                          >
+                            <Share2 size={13} />
+                            <span>Use as Promo</span>
+                          </button>
+                          <button
+                            onClick={() => handleOpenEditSnippet(activeSnippet)}
+                            className="btn-secondary btn-sm"
+                            title="Edit text"
+                          >
+                            <Edit3 size={13} />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSnippet(activeSnippet.team_snippet_id, activeSnippet.title)}
+                            disabled={deletingSnippetId === activeSnippet.team_snippet_id}
+                            className="btn-icon text-danger"
+                            title="Delete text"
+                          >
+                            {deletingSnippetId === activeSnippet.team_snippet_id ? (
+                              <Loader2 size={14} className="spin" />
+                            ) : (
+                              <Trash2 size={14} />
+                            )}
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -955,7 +962,7 @@ export default function TeamDashboard() {
                 <span>Restricted Only</span>
               </label>
 
-              {(team?.user_role === 'owner' || team?.user_role === 'admin') && (
+              {isAdmin && (
                 <button
                   onClick={handleResetAllPosts}
                   disabled={isResettingPosts}
@@ -1179,7 +1186,7 @@ export default function TeamDashboard() {
                       </div>
 
                       <div className="group-manage-btns">
-                        {(team?.user_role === 'owner' || team?.user_role === 'admin') && totalGroupPosts > 0 && (
+                        {isAdmin && totalGroupPosts > 0 && (
                           <button
                             onClick={() =>
                               handleResetGroupPosts(group.facebook_group_id, group.name)
@@ -1195,27 +1202,31 @@ export default function TeamDashboard() {
                             )}
                           </button>
                         )}
-                        <button
-                          onClick={() => handleOpenEditGroupModal(group)}
-                          className="btn-icon"
-                          title="Edit group"
-                        >
-                          <Edit3 size={14} />
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleDeleteGroup(group.facebook_group_id, group.name)
-                          }
-                          disabled={deletingGroupIds[group.facebook_group_id]}
-                          className="btn-icon btn-danger-soft"
-                          title="Delete group"
-                        >
-                          {deletingGroupIds[group.facebook_group_id] ? (
-                            <Loader2 size={14} className="spin" />
-                          ) : (
-                            <Trash2 size={14} />
-                          )}
-                        </button>
+                        {isAdmin && (
+                          <>
+                            <button
+                              onClick={() => handleOpenEditGroupModal(group)}
+                              className="btn-icon"
+                              title="Edit group"
+                            >
+                              <Edit3 size={14} />
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleDeleteGroup(group.facebook_group_id, group.name)
+                              }
+                              disabled={deletingGroupIds[group.facebook_group_id]}
+                              className="btn-icon btn-danger-soft"
+                              title="Delete group"
+                            >
+                              {deletingGroupIds[group.facebook_group_id] ? (
+                                <Loader2 size={14} className="spin" />
+                              ) : (
+                                <Trash2 size={14} />
+                              )}
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
