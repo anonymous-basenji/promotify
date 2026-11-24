@@ -1,6 +1,6 @@
 import { teamRepository } from '../repositories/team.repository.js';
 import { profileRepository } from '../repositories/profile.repository.js';
-import type { Team, TeamMember, TeamRole, TeamSnippet } from '../types/backend.types.js';
+import type { Team, TeamMember, TeamImage, TeamRole, TeamSnippet } from '../types/backend.types.js';
 
 export const teamService = {
   async getUserTeams(userId: string): Promise<Team[]> {
@@ -88,6 +88,8 @@ export const teamService = {
       throw err;
     }
 
+    // Files don't cascade, and RLS blocks removing them once the team is gone
+    await teamRepository.deleteImageFiles(teamId);
     await teamRepository.delete(teamId);
   },
 
@@ -336,5 +338,87 @@ export const teamService = {
     }
 
     await teamRepository.deleteSnippet(snippetId);
+  },
+
+  async getTeamImages(teamId: string, userId: string): Promise<TeamImage[]> {
+    const role = await teamRepository.getMemberRole(teamId, userId);
+    if (!role) {
+      const err = new Error('You are not a member of this team');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    return await teamRepository.getImages(teamId);
+  },
+
+  async createImage(
+    teamId: string,
+    title: string,
+    imagePath: string,
+    userId: string
+  ): Promise<TeamImage> {
+    const role = await teamRepository.getMemberRole(teamId, userId);
+    if (!role) {
+      const err = new Error('You are not a member of this team');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    // The file is uploaded to this path afterward, so it must be in this team's folder
+    const [folder, file, ...rest] = imagePath.split('/');
+    if (folder !== teamId || rest.length > 0 || !/^[0-9a-f-]{36}\.(jpg|png|webp)$/.test(file ?? '')) {
+      const err = new Error('Invalid image path');
+      (err as unknown as { status: number }).status = 400;
+      throw err;
+    }
+
+    return await teamRepository.createImage({
+      team_id: teamId,
+      user_id: userId,
+      title,
+      image_path: imagePath,
+    });
+  },
+
+  async updatePromoImage(
+    teamId: string,
+    imageId: string | null,
+    userId: string
+  ): Promise<void> {
+    const role = await teamRepository.getMemberRole(teamId, userId);
+    if (role !== 'owner' && role !== 'admin') {
+      const err = new Error('Only team admins can change the main image');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    if (imageId) {
+      const image = await teamRepository.getImageById(imageId);
+      if (!image || image.team_id !== teamId) {
+        const err = new Error('Image not found');
+        (err as unknown as { status: number }).status = 404;
+        throw err;
+      }
+    }
+
+    await teamRepository.updatePromoImage(teamId, imageId);
+  },
+
+  async deleteImage(teamId: string, imageId: string, userId: string): Promise<void> {
+    const role = await teamRepository.getMemberRole(teamId, userId);
+    if (role !== 'owner' && role !== 'admin') {
+      const err = new Error('Only team admins can delete images');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    const image = await teamRepository.getImageById(imageId);
+    if (!image || image.team_id !== teamId) {
+      const err = new Error('Image not found');
+      (err as unknown as { status: number }).status = 404;
+      throw err;
+    }
+
+    await teamRepository.deleteImage(imageId, image.image_path);
   },
 };

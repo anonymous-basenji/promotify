@@ -32,11 +32,14 @@ erDiagram
     profiles ||--o{ teams : "creator"
     profiles ||--o{ team_members : "user"
     profiles ||--o{ team_snippets : "creator"
+    profiles ||--o{ team_images : "uploader"
     profiles ||--o{ facebook_groups : "creator"
     profiles ||--o{ post_logs : "poster"
 
     teams ||--o{ team_members : "members"
     teams ||--o{ team_snippets : "snippets"
+    teams ||--o{ team_images : "images"
+    team_images |o--o| teams : "main image"
     teams ||--o{ facebook_groups : "groups"
     teams ||--o{ post_logs : "logs"
 
@@ -57,6 +60,7 @@ erDiagram
         text name
         text description
         text promo_text
+        uuid promo_image_id FK
         timestamptz created_at
         timestamptz updated_at
     }
@@ -77,6 +81,15 @@ erDiagram
         text content
         timestamptz created_at
         timestamptz updated_at
+    }
+
+    team_images {
+        uuid team_image_id PK
+        uuid team_id FK
+        uuid user_id FK
+        text title
+        text image_path
+        timestamptz created_at
     }
 
     facebook_groups {
@@ -127,6 +140,7 @@ Workspaces containing shared groups, snippets, and members.
 | `name` | `text` | NOT NULL | Team workspace name |
 | `description` | `text` | Nullable | Workspace description |
 | `promo_text` | `text` | Nullable | Workspace default promotional message |
+| `promo_image_id` | `uuid` | Nullable, FK (with `team_id`) -> `team_images` ON DELETE SET NULL | Main promo image |
 | `created_at` | `timestamptz` | NOT NULL, Default `now()` | Record creation timestamp |
 | `updated_at` | `timestamptz` | NOT NULL, Default `now()` | Record update timestamp |
 
@@ -152,7 +166,18 @@ Reusable copy snippets shared within a workspace.
 | `created_at` | `timestamptz` | NOT NULL, Default `now()` | Creation timestamp |
 | `updated_at` | `timestamptz` | NOT NULL, Default `now()` | Update timestamp |
 
-#### 5. `facebook_groups`
+#### 5. `team_images`
+Promo images shared within a workspace. Files live in the public `team-images` Storage bucket (5 MB; JPEG, PNG, WebP). A trigger limits each team to 20 images, and the row is saved before its file is uploaded.
+| Column | Type | Constraints / Defaults | Description |
+|---|---|---|---|
+| `team_image_id` | `uuid` | Primary Key, Default `gen_random_uuid()` | Image identifier |
+| `team_id` | `uuid` | NOT NULL, FK -> `teams(team_id)` ON DELETE CASCADE | Owning team |
+| `user_id` | `uuid` | Nullable, FK -> `profiles(user_id)` | Uploader |
+| `title` | `text` | NOT NULL | Image title / label |
+| `image_path` | `text` | NOT NULL, UNIQUE | Storage path, `<team_id>/<uuid>.<ext>` |
+| `created_at` | `timestamptz` | NOT NULL, Default `now()` | Creation timestamp |
+
+#### 6. `facebook_groups`
 Tracked promotion destinations belonging to a team workspace.
 | Column | Type | Constraints / Defaults | Description |
 |---|---|---|---|
@@ -168,7 +193,7 @@ Tracked promotion destinations belonging to a team workspace.
 | `created_at` | `timestamptz` | NOT NULL, Default `now()` | Creation timestamp |
 | `updated_at` | `timestamptz` | NOT NULL, Default `now()` | Update timestamp |
 
-#### 6. `post_logs`
+#### 7. `post_logs`
 Historical log entries created when a team member marks a group as posted.
 | Column | Type | Constraints / Defaults | Description |
 |---|---|---|---|

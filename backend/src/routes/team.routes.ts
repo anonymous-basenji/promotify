@@ -19,6 +19,11 @@ router.post('/:teamId/snippets', teamController.createSnippet);
 router.put('/:teamId/snippets/:snippetId', teamController.updateSnippet);
 router.delete('/:teamId/snippets/:snippetId', teamController.deleteSnippet);
 
+router.patch('/:teamId/promo-image', teamController.updatePromoImage);
+router.get('/:teamId/images', teamController.getImages);
+router.post('/:teamId/images', teamController.createImage);
+router.delete('/:teamId/images/:imageId', teamController.deleteImage);
+
 router.get('/:teamId/members', teamController.getMembers);
 router.post('/:teamId/members', teamController.addMember);
 router.patch('/:teamId/members/:memberId', teamController.updateMemberRole);

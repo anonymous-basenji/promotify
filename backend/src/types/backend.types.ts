@@ -26,6 +26,7 @@ export interface Team {
   name: string;
   description?: string | null;
   promo_text: string;
+  promo_image_id: string | null;
   created_at: string;
   updated_at: string;
   user_role?: TeamRole;
@@ -48,6 +49,16 @@ export interface TeamSnippet {
   content: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface TeamImage {
+  team_image_id: string;
+  team_id: string;
+  user_id: string | null;
+  title: string;
+  image_path: string;
+  image_url: string;
+  created_at: string;
 }
 
 export interface FacebookGroup {

@@ -80,7 +80,7 @@ backend/
     │   ├── group.service.ts
     │   └── post.service.ts
     ├── repositories/            # Supabase queries; also attach profiles to rows
-    │   ├── team.repository.ts   # teams, team_members, team_snippets
+    │   ├── team.repository.ts   # teams, team_members, team_snippets, team_images
     │   ├── group.repository.ts  # facebook_groups
     │   ├── post.repository.ts   # post_logs
     │   └── profile.repository.ts
@@ -169,8 +169,8 @@ All paths below are shown with the `/api` prefix. They also work without it.
 | POST | `/` | any user | `{ name, description?, promoText? }` | `201 Team` (the caller becomes `owner`) |
 | GET | `/:teamId` | Member, or the team creator | | `Team` with `user_role` |
 | PUT | `/:teamId` | Admin | `{ name?, description? }` | Updated `Team` |
-| DELETE | `/:teamId` | Owner | | `{ success: true }`. Groups, post logs, members, and snippets cascade. |
-| PATCH | `/:teamId/promo` | Member | `{ promoText? }` | `{ success: true }` |
+| DELETE | `/:teamId` | Owner | | `{ success: true }`. Groups, post logs, members, snippets, and images cascade, and the image files are removed. |
+| PATCH | `/:teamId/promo` | Admin | `{ promoText? }` | `{ success: true }` |
 
 ### Snippets (saved texts): `/api/teams/:teamId/snippets`
 
@@ -178,8 +178,19 @@ All paths below are shown with the `/api` prefix. They also work without it.
 | --- | --- | --- | --- | --- |
 | GET | `/` | Member | | `TeamSnippet[]` (oldest first) |
 | POST | `/` | Member | `{ title, content }` | `201 TeamSnippet` |
-| PUT | `/:snippetId` | Member | `{ title?, content? }` | Updated `TeamSnippet` |
-| DELETE | `/:snippetId` | Member | | `{ success: true }` |
+| PUT | `/:snippetId` | Admin | `{ title?, content? }` | Updated `TeamSnippet` |
+| DELETE | `/:snippetId` | Admin | | `{ success: true }` |
+
+### Promo images: `/api/teams/:teamId`
+
+| Method | Path | Who | Body | Response |
+| --- | --- | --- | --- | --- |
+| GET | `/images` | Member | | `TeamImage[]` (oldest first), each with `image_url` |
+| POST | `/images` | Member | `{ title, imagePath }` | `201 TeamImage`, or `409` if the team already has 20 |
+| DELETE | `/images/:imageId` | Admin | | `{ success: true }`. Deletes the file too, and clears the main image if it was this one. |
+| PATCH | `/promo-image` | Admin | `{ imageId }` (`null` clears it) | `{ success: true }`. Sets the team's `promo_image_id`. |
+
+The browser first posts the path `<team_id>/<uuid>.<jpg|png|webp>` here, which takes one of the team's 20 slots, then uploads the file straight to the `team-images` Storage bucket at that path. Storage only accepts a file whose row was added by the same user. If the upload fails, the row remains until the upload is retried or an admin deletes it. The bucket is **public**: anyone with a file's URL can view it. Storage policies let members list and upload, and owners and admins delete. The bucket allows JPEG, PNG, and WebP up to 5 MB.
 
 ### Members: `/api/teams/:teamId/members`
 
@@ -243,6 +254,7 @@ Rules for adding and changing members:
 | `promoText` | ≤ 5000 chars |
 | Snippet `title` | 1–150 chars |
 | Snippet `content` | 1–10000 chars |
+| Image `title` | 1–150 chars |
 | Group `name` | 1–150 chars |
 | `group_url` / `postUrl` | ≤ 1000 chars |
 | `notes` | ≤ 2000 chars |
@@ -254,9 +266,10 @@ The types are defined in [`src/types/backend.types.ts`](src/types/backend.types.
 | Table | Type | Key | Notes |
 | --- | --- | --- | --- |
 | `profiles` | `Profile` | `user_id` | One row per signed-in user. Looked up by email when inviting. |
-| `teams` | `Team` | `team_id` | `user_id` is the creator. `promo_text` is the team's main promo copy. |
+| `teams` | `Team` | `team_id` | `user_id` is the creator. `promo_text` is the team's main promo copy, and `promo_image_id` is its main image. |
 | `team_members` | `TeamMember` | `team_member_id` | Links `team_id` to `user_id`, with a `role` |
 | `team_snippets` | `TeamSnippet` | `team_snippet_id` | Extra saved texts per team |
+| `team_images` | `TeamImage` | `team_image_id` | Promo images per team. `image_path` is the Storage path. |
 | `facebook_groups` | `FacebookGroup` | `facebook_group_id` | `allowed_days` = days posting is allowed. Has an `is_active` flag. |
 | `post_logs` | `PostLog` | `post_log_id` | One row per post made to a group on a `posted_date` |
 

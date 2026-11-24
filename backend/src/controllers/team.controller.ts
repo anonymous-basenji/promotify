@@ -38,6 +38,15 @@ const updateSnippetSchema = z.object({
   content: z.string().trim().min(1, 'Content cannot be empty').max(10000, 'Content cannot exceed 10000 characters').optional(),
 });
 
+const createImageSchema = z.object({
+  title: z.string().trim().min(1, 'Title is required').max(150, 'Title cannot exceed 150 characters'),
+  imagePath: z.string().max(200, 'Invalid image path'),
+});
+
+const updatePromoImageSchema = z.object({
+  imageId: z.uuid('Invalid image ID').nullable(),
+});
+
 export const teamController = {
   async getTeams(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -212,6 +221,53 @@ export const teamController = {
       const snippetId = req.params.snippetId as string;
       const userId = req.user!.user_id;
       await teamService.deleteSnippet(teamId, snippetId, userId);
+      res.json({ success: true });
+    } catch (err: unknown) {
+      handleError(res, err);
+    }
+  },
+
+  async getImages(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const teamId = req.params.teamId as string;
+      const userId = req.user!.user_id;
+      const images = await teamService.getTeamImages(teamId, userId);
+      res.json(images);
+    } catch (err: unknown) {
+      handleError(res, err);
+    }
+  },
+
+  async createImage(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const teamId = req.params.teamId as string;
+      const userId = req.user!.user_id;
+      const { title, imagePath } = createImageSchema.parse(req.body);
+      const image = await teamService.createImage(teamId, title, imagePath, userId);
+      res.status(201).json(image);
+    } catch (err: unknown) {
+      handleError(res, err);
+    }
+  },
+
+  async updatePromoImage(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const teamId = req.params.teamId as string;
+      const userId = req.user!.user_id;
+      const { imageId } = updatePromoImageSchema.parse(req.body);
+      await teamService.updatePromoImage(teamId, imageId, userId);
+      res.json({ success: true });
+    } catch (err: unknown) {
+      handleError(res, err);
+    }
+  },
+
+  async deleteImage(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const teamId = req.params.teamId as string;
+      const imageId = req.params.imageId as string;
+      const userId = req.user!.user_id;
+      await teamService.deleteImage(teamId, imageId, userId);
       res.json({ success: true });
     } catch (err: unknown) {
       handleError(res, err);

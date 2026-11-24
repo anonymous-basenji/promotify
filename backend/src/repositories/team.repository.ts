@@ -1,5 +1,12 @@
 import { db } from '../config/supabase.js';
-import type { Team, TeamMember, TeamRole, Profile, TeamSnippet } from '../types/backend.types.js';
+import type { Team, TeamMember, TeamRole, Profile, TeamSnippet, TeamImage } from '../types/backend.types.js';
+
+const IMAGE_BUCKET = 'team-images';
+
+function withImageUrl(row: Omit<TeamImage, 'image_url'>): TeamImage {
+  const { data } = db().storage.from(IMAGE_BUCKET).getPublicUrl(row.image_path);
+  return { ...row, image_url: data.publicUrl };
+}
 
 export const teamRepository = {
   async findByUserId(userId: string): Promise<Team[]> {
@@ -103,7 +110,7 @@ export const teamRepository = {
   },
 
   async delete(teamId: string): Promise<void> {
-    // post_logs, facebook_groups, team_members and team_snippets cascade on team_id
+    // post_logs, facebook_groups, team_members, team_snippets and team_images cascade on team_id
     const { data, error } = await db()
       .from('teams')
       .delete()
@@ -415,5 +422,125 @@ export const teamRepository = {
       throw new Error(error.message);
     }
     return (data as TeamSnippet) || null;
+  },
+
+  async getImages(teamId: string): Promise<TeamImage[]> {
+    const { data, error } = await db()
+      .from('team_images')
+      .select('*')
+      .eq('team_id', teamId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching images:', error);
+      throw new Error(error.message);
+    }
+    return (data || []).map(withImageUrl);
+  },
+
+  async getImageById(imageId: string): Promise<TeamImage | null> {
+    const { data, error } = await db()
+      .from('team_images')
+      .select('*')
+      .eq('team_image_id', imageId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error getting image by id:', error);
+      throw new Error(error.message);
+    }
+    return data ? withImageUrl(data) : null;
+  },
+
+  async createImage(imageData: {
+    team_id: string;
+    user_id: string;
+    title: string;
+    image_path: string;
+  }): Promise<TeamImage> {
+    const { data, error } = await db()
+      .from('team_images')
+      .insert(imageData)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '23514' && error.message === 'Team image limit reached') {
+        const err = new Error('This team has reached its limit of 20 images. An admin can delete one to make room.');
+        (err as unknown as { status: number }).status = 409;
+        throw err;
+      }
+      console.error('Error creating image:', error);
+      throw new Error(error.message);
+    }
+    return withImageUrl(data);
+  },
+
+  async updatePromoImage(teamId: string, imageId: string | null): Promise<void> {
+    const { data, error } = await db()
+      .from('teams')
+      .update({ promo_image_id: imageId, updated_at: new Date().toISOString() })
+      .eq('team_id', teamId)
+      .select('team_id');
+
+    if (error) {
+      console.error('Error updating main image:', error);
+      throw new Error(error.message);
+    }
+
+    // RLS silently skips rows it blocks
+    if (!data || data.length === 0) {
+      const err = new Error('Only team admins can change the main image');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+  },
+
+  async deleteImage(imageId: string, imagePath: string): Promise<void> {
+    const { data, error } = await db()
+      .from('team_images')
+      .delete()
+      .eq('team_image_id', imageId)
+      .select('team_image_id');
+
+    if (error) {
+      console.error('Error deleting image:', error);
+      throw new Error(error.message);
+    }
+
+    // RLS silently skips rows it blocks
+    if (!data || data.length === 0) {
+      const err = new Error('Only team admins can delete images');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    const { error: fileError } = await db().storage.from(IMAGE_BUCKET).remove([imagePath]);
+    if (fileError) {
+      console.error('Error deleting image file:', fileError);
+      throw new Error(fileError.message);
+    }
+  },
+
+  async deleteImageFiles(teamId: string): Promise<void> {
+    const bucket = db().storage.from(IMAGE_BUCKET);
+
+    // list() returns at most 1000 files per call
+    while (true) {
+      const { data: files, error } = await bucket.list(teamId, { limit: 1000 });
+      if (error) {
+        console.error('Error listing team image files:', error);
+        throw new Error(error.message);
+      }
+      if (files.length === 0) return;
+
+      const { data: removed, error: removeError } = await bucket.remove(
+        files.map((f) => `${teamId}/${f.name}`)
+      );
+      if (removeError || removed.length === 0) {
+        console.error('Error deleting team image files:', removeError);
+        throw new Error(removeError?.message || 'Failed to delete team image files');
+      }
+    }
   },
 };
