@@ -167,7 +167,7 @@ Reusable copy snippets shared within a workspace.
 | `updated_at` | `timestamptz` | NOT NULL, Default `now()` | Update timestamp |
 
 #### 5. `team_images`
-Promo images shared within a workspace. Files live in the public `team-images` Storage bucket (5 MB; JPEG, PNG, WebP).
+Promo images shared within a workspace. Files live in the public `team-images` Storage bucket (5 MB; JPEG, PNG, WebP). A trigger limits each team to 20 images, and the row is saved before its file is uploaded.
 | Column | Type | Constraints / Defaults | Description |
 |---|---|---|---|
 | `team_image_id` | `uuid` | Primary Key, Default `gen_random_uuid()` | Image identifier |

@@ -186,11 +186,11 @@ All paths below are shown with the `/api` prefix. They also work without it.
 | Method | Path | Who | Body | Response |
 | --- | --- | --- | --- | --- |
 | GET | `/images` | Member | | `TeamImage[]` (oldest first), each with `image_url` |
-| POST | `/images` | Member | `{ title, imagePath }` | `201 TeamImage` |
+| POST | `/images` | Member | `{ title, imagePath }` | `201 TeamImage`, or `409` if the team already has 20 |
 | DELETE | `/images/:imageId` | Admin | | `{ success: true }`. Deletes the file too, and clears the main image if it was this one. |
 | PATCH | `/promo-image` | Admin | `{ imageId }` (`null` clears it) | `{ success: true }`. Sets the team's `promo_image_id`. |
 
-The browser uploads the file straight to the `team-images` Storage bucket at `<team_id>/<uuid>.<jpg|png|webp>`, then posts that path here. The bucket is **public**: anyone with a file's URL can view it. Storage policies let members list and upload, and owners and admins delete. The bucket allows JPEG, PNG, and WebP up to 5 MB.
+The browser first posts the path `<team_id>/<uuid>.<jpg|png|webp>` here, which takes one of the team's 20 slots, then uploads the file straight to the `team-images` Storage bucket at that path. Storage only accepts a file whose row was added by the same user. If the upload fails, the row remains until the upload is retried or an admin deletes it. The bucket is **public**: anyone with a file's URL can view it. Storage policies let members list and upload, and owners and admins delete. The bucket allows JPEG, PNG, and WebP up to 5 MB.
 
 ### Members: `/api/teams/:teamId/members`
 
