@@ -53,11 +53,13 @@ CREATE POLICY "Team members can list team images"
     AND public.is_team_member(((storage.foldername(name))[1])::uuid, auth.uid())
   );
 
+-- Subfolders would block team deletion, so files must sit directly in the team folder
 CREATE POLICY "Team members can upload team images"
   ON storage.objects FOR INSERT
   TO authenticated
   WITH CHECK (
     bucket_id = 'team-images'
+    AND name ~ '^[0-9a-f-]{36}/[0-9a-f-]{36}\.(jpg|png|webp)$'
     AND public.is_team_member(((storage.foldername(name))[1])::uuid, auth.uid())
   );
 
