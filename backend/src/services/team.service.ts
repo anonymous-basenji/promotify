@@ -401,4 +401,22 @@ export const teamService = {
 
     await teamRepository.updatePromoImage(teamId, imageId);
   },
+
+  async deleteImage(teamId: string, imageId: string, userId: string): Promise<void> {
+    const role = await teamRepository.getMemberRole(teamId, userId);
+    if (role !== 'owner' && role !== 'admin') {
+      const err = new Error('Only team admins can delete images');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    const image = await teamRepository.getImageById(imageId);
+    if (!image || image.team_id !== teamId) {
+      const err = new Error('Image not found');
+      (err as unknown as { status: number }).status = 404;
+      throw err;
+    }
+
+    await teamRepository.deleteImage(imageId, image.image_path);
+  },
 };

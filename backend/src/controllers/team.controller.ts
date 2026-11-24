@@ -261,4 +261,16 @@ export const teamController = {
       handleError(res, err);
     }
   },
+
+  async deleteImage(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const teamId = req.params.teamId as string;
+      const imageId = req.params.imageId as string;
+      const userId = req.user!.user_id;
+      await teamService.deleteImage(teamId, imageId, userId);
+      res.json({ success: true });
+    } catch (err: unknown) {
+      handleError(res, err);
+    }
+  },
 };

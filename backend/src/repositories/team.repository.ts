@@ -490,4 +490,30 @@ export const teamRepository = {
       throw err;
     }
   },
+
+  async deleteImage(imageId: string, imagePath: string): Promise<void> {
+    const { data, error } = await db()
+      .from('team_images')
+      .delete()
+      .eq('team_image_id', imageId)
+      .select('team_image_id');
+
+    if (error) {
+      console.error('Error deleting image:', error);
+      throw new Error(error.message);
+    }
+
+    // RLS silently skips rows it blocks
+    if (!data || data.length === 0) {
+      const err = new Error('Only team admins can delete images');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    const { error: fileError } = await db().storage.from(IMAGE_BUCKET).remove([imagePath]);
+    if (fileError) {
+      console.error('Error deleting image file:', fileError);
+      throw new Error(fileError.message);
+    }
+  },
 };
