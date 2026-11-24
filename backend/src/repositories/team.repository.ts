@@ -1,5 +1,12 @@
 import { db } from '../config/supabase.js';
-import type { Team, TeamMember, TeamRole, Profile, TeamSnippet } from '../types/backend.types.js';
+import type { Team, TeamMember, TeamRole, Profile, TeamSnippet, TeamImage } from '../types/backend.types.js';
+
+const IMAGE_BUCKET = 'team-images';
+
+function withImageUrl(row: Omit<TeamImage, 'image_url'>): TeamImage {
+  const { data } = db().storage.from(IMAGE_BUCKET).getPublicUrl(row.image_path);
+  return { ...row, image_url: data.publicUrl };
+}
 
 export const teamRepository = {
   async findByUserId(userId: string): Promise<Team[]> {
@@ -415,5 +422,38 @@ export const teamRepository = {
       throw new Error(error.message);
     }
     return (data as TeamSnippet) || null;
+  },
+
+  async getImages(teamId: string): Promise<TeamImage[]> {
+    const { data, error } = await db()
+      .from('team_images')
+      .select('*')
+      .eq('team_id', teamId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching images:', error);
+      throw new Error(error.message);
+    }
+    return (data || []).map(withImageUrl);
+  },
+
+  async createImage(imageData: {
+    team_id: string;
+    user_id: string;
+    title: string;
+    image_path: string;
+  }): Promise<TeamImage> {
+    const { data, error } = await db()
+      .from('team_images')
+      .insert(imageData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating image:', error);
+      throw new Error(error.message);
+    }
+    return withImageUrl(data);
   },
 };

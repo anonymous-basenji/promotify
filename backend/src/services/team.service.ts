@@ -1,6 +1,6 @@
 import { teamRepository } from '../repositories/team.repository.js';
 import { profileRepository } from '../repositories/profile.repository.js';
-import type { Team, TeamMember, TeamRole, TeamSnippet } from '../types/backend.types.js';
+import type { Team, TeamMember, TeamImage, TeamRole, TeamSnippet } from '../types/backend.types.js';
 
 export const teamService = {
   async getUserTeams(userId: string): Promise<Team[]> {
@@ -336,5 +336,45 @@ export const teamService = {
     }
 
     await teamRepository.deleteSnippet(snippetId);
+  },
+
+  async getTeamImages(teamId: string, userId: string): Promise<TeamImage[]> {
+    const role = await teamRepository.getMemberRole(teamId, userId);
+    if (!role) {
+      const err = new Error('You are not a member of this team');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    return await teamRepository.getImages(teamId);
+  },
+
+  async createImage(
+    teamId: string,
+    title: string,
+    imagePath: string,
+    userId: string
+  ): Promise<TeamImage> {
+    const role = await teamRepository.getMemberRole(teamId, userId);
+    if (!role) {
+      const err = new Error('You are not a member of this team');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    // Uploads go straight to storage, so only accept a path in this team's folder
+    const [folder, file, ...rest] = imagePath.split('/');
+    if (folder !== teamId || rest.length > 0 || !/^[0-9a-f-]{36}\.(jpg|png|webp)$/.test(file ?? '')) {
+      const err = new Error('Invalid image path');
+      (err as unknown as { status: number }).status = 400;
+      throw err;
+    }
+
+    return await teamRepository.createImage({
+      team_id: teamId,
+      user_id: userId,
+      title,
+      image_path: imagePath,
+    });
   },
 };

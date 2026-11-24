@@ -50,6 +50,16 @@ export interface TeamSnippet {
   updated_at: string;
 }
 
+export interface TeamImage {
+  team_image_id: string;
+  team_id: string;
+  user_id: string | null;
+  title: string;
+  image_path: string;
+  image_url: string;
+  created_at: string;
+}
+
 export interface FacebookGroup {
   facebook_group_id: string;
   team_id: string;
