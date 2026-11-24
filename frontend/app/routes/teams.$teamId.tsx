@@ -23,6 +23,7 @@ import {
   Users,
   Download,
   Image as ImageIcon,
+  Star,
 } from 'lucide-react';
 import { useAuth } from '~/context/AuthContext';
 import { apiFetch } from '~/lib/api';
@@ -93,6 +94,9 @@ export default function TeamDashboard() {
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [isSavingImage, setIsSavingImage] = useState(false);
+  const [busyImageId, setBusyImageId] = useState<string | null>(null);
+
+  const mainImage = images.find((i) => i.team_image_id === team?.promo_image_id) ?? null;
 
   useEffect(() => {
     if (!imageFile) {
@@ -411,6 +415,25 @@ export default function TeamDashboard() {
     } catch (err) {
       console.error('Failed to copy image:', err);
       triggerToast('Could not copy the image. Use Download instead.');
+    }
+  };
+
+  const handleSetMainImage = async (imageId: string | null) => {
+    if (!teamId) return;
+
+    const busyId = imageId ?? team?.promo_image_id ?? null;
+    setBusyImageId(busyId);
+    try {
+      await apiFetch<{ success: boolean }>(`/api/teams/${teamId}/promo-image`, {
+        method: 'PATCH',
+        body: JSON.stringify({ imageId }),
+      });
+      setTeam((prev) => (prev ? { ...prev, promo_image_id: imageId } : prev));
+      triggerToast(imageId ? 'Main image updated! ⭐' : 'Main image removed.');
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message);
+    } finally {
+      setBusyImageId(null);
     }
   };
 
@@ -937,6 +960,13 @@ export default function TeamDashboard() {
               </p>
             </div>
           )}
+
+          {mainImage && (
+            <div className="main-image">
+              <img src={mainImage.image_url} alt={mainImage.title} className="main-image-img" />
+              <div className="snippet-active-actions">{renderImageActions(mainImage)}</div>
+            </div>
+          )}
         </section>
 
         <section className="snippets-section-card">
@@ -1081,14 +1111,30 @@ export default function TeamDashboard() {
           ) : (
             <div className="image-grid">
               {images.map((image) => {
+                const isMain = image.team_image_id === team?.promo_image_id;
+                const isBusy = busyImageId === image.team_image_id;
                 return (
                   <div key={image.team_image_id} className="image-card">
                     <img src={image.image_url} alt={image.title} className="image-thumb" loading="lazy" />
                     <div className="image-card-title">
                       <span className="snippet-pill-title">{image.title}</span>
+                      {isMain && <span className="snippets-count-badge">Main</span>}
                     </div>
                     <div className="snippet-active-actions image-card-actions">
                       {renderImageActions(image)}
+                      {isAdmin && (
+                        <>
+                          <button
+                            onClick={() => handleSetMainImage(isMain ? null : image.team_image_id)}
+                            disabled={isBusy}
+                            className="btn-icon"
+                            title={isMain ? 'Remove as main image' : 'Set as main image'}
+                            aria-label={isMain ? 'Remove as main image' : 'Set as main image'}
+                          >
+                            <Star size={14} fill={isMain ? 'currentColor' : 'none'} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 );
