@@ -74,6 +74,7 @@ export default function TeamDashboard() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const [snippets, setSnippets] = useState<TeamSnippet[]>([]);
+  const [snippetsFailed, setSnippetsFailed] = useState(false);
   const [selectedSnippetId, setSelectedSnippetId] = useState<string | null>(null);
   const [isSnippetModalOpen, setIsSnippetModalOpen] = useState(false);
   const [editingSnippet, setEditingSnippet] = useState<TeamSnippet | null>(null);
@@ -190,7 +191,10 @@ export default function TeamDashboard() {
           `/api/teams/${teamId}/posts/today?date=${encodeURIComponent(todayStr)}`
         ),
         apiFetch<Record<string, number>>(`/api/teams/${teamId}/posts/counts`),
-        apiFetch<TeamSnippet[]>(`/api/teams/${teamId}/snippets`).catch(() => []),
+        apiFetch<TeamSnippet[]>(`/api/teams/${teamId}/snippets`).catch((err) => {
+          console.error('Failed to load saved texts:', err);
+          return null;
+        }),
         apiFetch<TeamImage[]>(`/api/teams/${teamId}/images`).catch((err) => {
           console.error('Failed to load images:', err);
           return null;
@@ -201,6 +205,7 @@ export default function TeamDashboard() {
       setTodayPosts(todayLogs);
       setPostCounts(counts);
       setSnippets(snippetData || []);
+      setSnippetsFailed(snippetData === null);
       setImages(imageData || []);
       setImagesFailed(imageData === null);
     } catch (err: unknown) {
@@ -1010,9 +1015,15 @@ export default function TeamDashboard() {
 
           {snippets.length === 0 ? (
             <div className="snippets-empty-box">
-              <p className="snippets-empty-text">
-                No snippets saved yet. Save alternate promo translations, campaign variants, or common replies for your team!
-              </p>
+              {snippetsFailed ? (
+                <p className="load-error" role="alert">
+                  Could not load saved texts. Refresh the page to try again.
+                </p>
+              ) : (
+                <p className="snippets-empty-text">
+                  No snippets saved yet. Save alternate promo translations, campaign variants, or common replies for your team!
+                </p>
+              )}
             </div>
           ) : (
             <div className="snippets-tabs-layout">
