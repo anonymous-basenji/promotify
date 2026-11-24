@@ -170,7 +170,7 @@ All paths below are shown with the `/api` prefix. They also work without it.
 | GET | `/:teamId` | Member, or the team creator | | `Team` with `user_role` |
 | PUT | `/:teamId` | Admin | `{ name?, description? }` | Updated `Team` |
 | DELETE | `/:teamId` | Owner | | `{ success: true }`. Groups, post logs, members, and snippets cascade. |
-| PATCH | `/:teamId/promo` | Member | `{ promoText? }` | `{ success: true }` |
+| PATCH | `/:teamId/promo` | Admin | `{ promoText? }` | `{ success: true }` |
 
 ### Snippets (saved texts): `/api/teams/:teamId/snippets`
 
@@ -178,8 +178,8 @@ All paths below are shown with the `/api` prefix. They also work without it.
 | --- | --- | --- | --- | --- |
 | GET | `/` | Member | | `TeamSnippet[]` (oldest first) |
 | POST | `/` | Member | `{ title, content }` | `201 TeamSnippet` |
-| PUT | `/:snippetId` | Member | `{ title?, content? }` | Updated `TeamSnippet` |
-| DELETE | `/:snippetId` | Member | | `{ success: true }` |
+| PUT | `/:snippetId` | Admin | `{ title?, content? }` | Updated `TeamSnippet` |
+| DELETE | `/:snippetId` | Admin | | `{ success: true }` |
 
 ### Members: `/api/teams/:teamId/members`
 
