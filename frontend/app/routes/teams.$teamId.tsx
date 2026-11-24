@@ -437,6 +437,27 @@ export default function TeamDashboard() {
     }
   };
 
+  const handleDeleteImage = async (image: TeamImage) => {
+    if (!teamId) return;
+    if (!confirm(`Are you sure you want to delete image "${image.title}"?`)) return;
+
+    setBusyImageId(image.team_image_id);
+    try {
+      await apiFetch<{ success: boolean }>(`/api/teams/${teamId}/images/${image.team_image_id}`, {
+        method: 'DELETE',
+      });
+      setImages((prev) => prev.filter((i) => i.team_image_id !== image.team_image_id));
+      setTeam((prev) =>
+        prev?.promo_image_id === image.team_image_id ? { ...prev, promo_image_id: null } : prev
+      );
+      triggerToast('Image deleted.');
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message);
+    } finally {
+      setBusyImageId(null);
+    }
+  };
+
   const renderImageActions = (image: TeamImage) => (
     <>
       <button
@@ -1132,6 +1153,15 @@ export default function TeamDashboard() {
                             aria-label={isMain ? 'Remove as main image' : 'Set as main image'}
                           >
                             <Star size={14} fill={isMain ? 'currentColor' : 'none'} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteImage(image)}
+                            disabled={isBusy}
+                            className="btn-icon text-danger"
+                            title="Delete image"
+                            aria-label={`Delete ${image.title}`}
+                          >
+                            {isBusy ? <Loader2 size={14} className="spin" /> : <Trash2 size={14} />}
                           </button>
                         </>
                       )}
