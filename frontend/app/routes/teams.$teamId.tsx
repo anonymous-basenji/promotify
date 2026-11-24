@@ -21,15 +21,27 @@ import {
   RotateCcw,
   FileText,
   Users,
+  Download,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { useAuth } from '~/context/AuthContext';
 import { apiFetch } from '~/lib/api';
-import type { DayOfWeek, FacebookGroup, PostLog, Team, ViewFilter, TeamSnippet } from '~/types/promotify';
+import { supabase } from '~/lib/supabaseClient';
+import type { DayOfWeek, FacebookGroup, PostLog, Team, ViewFilter, TeamSnippet, TeamImage } from '~/types/promotify';
 import { DAYS_OF_WEEK } from '~/types/promotify';
 import { HeaderBar } from '~/components/HeaderBar';
 import { TeamMembersModal } from '~/components/TeamMembersModal';
 import { PostHistoryDrawer } from '~/components/PostHistoryDrawer';
 import './teams.$teamId.css';
+
+const IMAGE_EXTENSIONS: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const IMAGE_DISCLAIMER =
+  "Images aren't private. Anyone with an image's link can view it, and photos may include location data. Don't upload anything confidential.";
 
 export default function TeamDashboard() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -58,6 +70,25 @@ export default function TeamDashboard() {
     if (!snippets || snippets.length === 0) return null;
     return snippets.find((s) => s.team_snippet_id === selectedSnippetId) || snippets[0];
   }, [snippets, selectedSnippetId]);
+
+  const [images, setImages] = useState<TeamImage[]>([]);
+  const [imagesFailed, setImagesFailed] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [imageTitle, setImageTitle] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [isSavingImage, setIsSavingImage] = useState(false);
+
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(imageFile);
+    setImagePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
 
   const [isEditingPromo, setIsEditingPromo] = useState(false);
   const [tempPromoText, setTempPromoText] = useState('');
@@ -135,19 +166,25 @@ export default function TeamDashboard() {
       setPromoText(teamData.promo_text || '');
       setTempPromoText(teamData.promo_text || '');
 
-      const [groupData, todayLogs, counts, snippetData] = await Promise.all([
+      const [groupData, todayLogs, counts, snippetData, imageData] = await Promise.all([
         apiFetch<FacebookGroup[]>(`/api/teams/${teamId}/groups`),
         apiFetch<Record<string, PostLog[]>>(
           `/api/teams/${teamId}/posts/today?date=${encodeURIComponent(todayStr)}`
         ),
         apiFetch<Record<string, number>>(`/api/teams/${teamId}/posts/counts`),
         apiFetch<TeamSnippet[]>(`/api/teams/${teamId}/snippets`).catch(() => []),
+        apiFetch<TeamImage[]>(`/api/teams/${teamId}/images`).catch((err) => {
+          console.error('Failed to load images:', err);
+          return null;
+        }),
       ]);
 
       setGroups(groupData);
       setTodayPosts(todayLogs);
       setPostCounts(counts);
       setSnippets(snippetData || []);
+      setImages(imageData || []);
+      setImagesFailed(imageData === null);
     } catch (err: unknown) {
       setErrorMsg((err as Error).message || 'Failed to load team data');
     } finally {
@@ -304,6 +341,74 @@ export default function TeamDashboard() {
     setIsEditingPromo(true);
     triggerToast(`"${title}" loaded into promo editor! Click Save to apply.`);
   };
+
+  const handleOpenAddImage = () => {
+    setImageTitle('');
+    setImageFile(null);
+    setImageError(null);
+    setIsImageModalOpen(true);
+  };
+
+  const handleSelectImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    let error: string | null = null;
+    if (file && !IMAGE_EXTENSIONS[file.type]) error = 'Choose a JPEG, PNG, or WebP image.';
+    else if (file && file.size > MAX_IMAGE_BYTES) error = 'Images can be up to 5 MB.';
+
+    setImageError(error);
+    setImageFile(error ? null : file);
+    if (error) e.target.value = '';
+  };
+
+  const handleSaveImage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!teamId || !imageFile || !imageTitle.trim()) return;
+
+    setIsSavingImage(true);
+    setImageError(null);
+    try {
+      const imagePath = `${teamId}/${crypto.randomUUID()}.${IMAGE_EXTENSIONS[imageFile.type]}`;
+      const { error } = await supabase.storage
+        .from('team-images')
+        .upload(imagePath, imageFile, { contentType: imageFile.type });
+      if (error) throw error;
+
+      const created = await apiFetch<TeamImage>(`/api/teams/${teamId}/images`, {
+        method: 'POST',
+        body: JSON.stringify({ title: imageTitle.trim(), imagePath }),
+      });
+      setImages((prev) => [...prev, created]);
+      setIsImageModalOpen(false);
+      triggerToast('Image added!');
+    } catch (err: unknown) {
+      setImageError((err as Error).message);
+    } finally {
+      setIsSavingImage(false);
+    }
+  };
+
+  const renderImageActions = (image: TeamImage) => (
+    <>
+      <a
+        href={image.image_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="btn-icon"
+        title="Open image"
+        aria-label={`Open ${image.title}`}
+      >
+        <ExternalLink size={14} />
+      </a>
+      <a
+        href={`${image.image_url}?download=`}
+        className="btn-icon"
+        title="Download image"
+        aria-label={`Download ${image.title}`}
+      >
+        <Download size={14} />
+      </a>
+    </>
+  );
 
   const handleOpenAddGroupModal = () => {
     setEditingGroup(null);
@@ -903,6 +1008,60 @@ export default function TeamDashboard() {
           )}
         </section>
 
+        <section className="snippets-section-card">
+          <div className="snippets-card-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ImageIcon size={18} className="text-accent" />
+              <h3 className="section-title">Promo Images</h3>
+              <span className="snippets-count-badge">{images.length}</span>
+            </div>
+
+            <button
+              onClick={handleOpenAddImage}
+              className="btn-primary btn-sm"
+              title="Add a promo image"
+            >
+              <Plus size={14} />
+              <span>Add Image</span>
+            </button>
+          </div>
+
+          <p className="image-disclaimer">
+            <AlertCircle size={14} />
+            <span>{IMAGE_DISCLAIMER}</span>
+          </p>
+
+          {images.length === 0 ? (
+            <div className="snippets-empty-box">
+              {imagesFailed ? (
+                <p className="load-error" role="alert">
+                  Could not load images. Refresh the page to try again.
+                </p>
+              ) : (
+                <p className="snippets-empty-text">
+                  No images yet. Add flyers, photos, or graphics for your team to post!
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="image-grid">
+              {images.map((image) => {
+                return (
+                  <div key={image.team_image_id} className="image-card">
+                    <img src={image.image_url} alt={image.title} className="image-thumb" loading="lazy" />
+                    <div className="image-card-title">
+                      <span className="snippet-pill-title">{image.title}</span>
+                    </div>
+                    <div className="snippet-active-actions image-card-actions">
+                      {renderImageActions(image)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
         <section className="controls-section">
           <div className="day-tabs-scroll">
             <div className="day-tabs-container">
@@ -1469,6 +1628,102 @@ export default function TeamDashboard() {
                     </>
                   ) : (
                     <span>Save Changes</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isImageModalOpen && (
+        <div className="modal-backdrop" onClick={() => setIsImageModalOpen(false)}>
+          <div className="modal-content modal-md" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ImageIcon size={22} className="text-accent" />
+                <div>
+                  <h2 className="modal-title">Add Promo Image</h2>
+                  <p className="modal-subtitle">JPEG, PNG, or WebP, up to 5 MB.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsImageModalOpen(false)}
+                className="btn-icon"
+                title="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveImage}>
+              <div className="modal-body">
+                <div className="input-group">
+                  <label className="input-label" htmlFor="imageTitle">
+                    Image Title *
+                  </label>
+                  <input
+                    id="imageTitle"
+                    type="text"
+                    required
+                    maxLength={150}
+                    value={imageTitle}
+                    onChange={(e) => setImageTitle(e.target.value)}
+                    placeholder="e.g. Main Flyer, Spanish Flyer, Stage Photo..."
+                    className="input-field"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label className="input-label" htmlFor="imageFile">
+                    Image File *
+                  </label>
+                  <input
+                    id="imageFile"
+                    type="file"
+                    accept={Object.keys(IMAGE_EXTENSIONS).join(',')}
+                    onChange={handleSelectImageFile}
+                    className="input-field"
+                  />
+                </div>
+
+                {imagePreviewUrl && (
+                  <img src={imagePreviewUrl} alt="Preview" className="image-preview" />
+                )}
+
+                {imageError && (
+                  <p className="load-error" role="alert">
+                    {imageError}
+                  </p>
+                )}
+
+                <p className="image-disclaimer">
+                  <AlertCircle size={14} />
+                  <span>{IMAGE_DISCLAIMER}</span>
+                </p>
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  onClick={() => setIsImageModalOpen(false)}
+                  className="btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingImage || !imageTitle.trim() || !imageFile}
+                  className="btn-primary"
+                >
+                  {isSavingImage ? (
+                    <>
+                      <Loader2 size={16} className="spin" />
+                      <span>Uploading...</span>
+                    </>
+                  ) : (
+                    <span>Add Image</span>
                   )}
                 </button>
               </div>
