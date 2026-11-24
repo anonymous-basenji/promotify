@@ -41,6 +41,7 @@ const IMAGE_EXTENSIONS: Record<string, string> = {
   'image/webp': 'webp',
 };
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGES = 20; // Enforced by the database
 const IMAGE_DISCLAIMER =
   "Images aren't private. Anyone with an image's link can view it, and photos may include location data. Don't upload anything confidential.";
 
@@ -93,10 +94,12 @@ export default function TeamDashboard() {
   const [imageTitle, setImageTitle] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [pendingImage, setPendingImage] = useState<TeamImage | null>(null); // Saved, but its file isn't uploaded yet
   const [imageError, setImageError] = useState<string | null>(null);
   const [isSavingImage, setIsSavingImage] = useState(false);
   const [busyImageId, setBusyImageId] = useState<string | null>(null);
 
+  const isImageLimitReached = images.length >= MAX_IMAGES;
   const mainImage = images.find((i) => i.team_image_id === team?.promo_image_id) ?? null;
 
   useEffect(() => {
@@ -366,10 +369,13 @@ export default function TeamDashboard() {
   };
 
   const handleOpenAddImage = () => {
+    setIsImageModalOpen(true);
+    if (pendingImage?.team_id === teamId) return; // Finish the earlier upload
+
+    setPendingImage(null);
     setImageTitle('');
     setImageFile(null);
     setImageError(null);
-    setIsImageModalOpen(true);
   };
 
   const handleSelectImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -390,17 +396,31 @@ export default function TeamDashboard() {
     setIsSavingImage(true);
     setImageError(null);
     try {
-      const imagePath = `${teamId}/${crypto.randomUUID()}.${IMAGE_EXTENSIONS[imageFile.type]}`;
+      // The row takes one of the team's image slots, and storage only accepts a file that has one
+      let image = pendingImage;
+      if (!image) {
+        image = await apiFetch<TeamImage>(`/api/teams/${teamId}/images`, {
+          method: 'POST',
+          body: JSON.stringify({
+            title: imageTitle.trim(),
+            imagePath: `${teamId}/${crypto.randomUUID()}.${IMAGE_EXTENSIONS[imageFile.type]}`,
+          }),
+        });
+        setPendingImage(image);
+      }
+
+      const saved = image;
       const { error } = await supabase.storage
         .from('team-images')
-        .upload(imagePath, imageFile, { contentType: imageFile.type });
-      if (error) throw error;
+        .upload(saved.image_path, imageFile, { contentType: imageFile.type });
+      // 409 means an earlier try got through but its response was lost
+      if (error && (error as { statusCode?: string }).statusCode !== '409') {
+        console.error('Failed to upload image:', error);
+        throw new Error('The upload failed. Try again, and it will use the same image slot.');
+      }
 
-      const created = await apiFetch<TeamImage>(`/api/teams/${teamId}/images`, {
-        method: 'POST',
-        body: JSON.stringify({ title: imageTitle.trim(), imagePath }),
-      });
-      setImages((prev) => [...prev, created]);
+      setImages((prev) => [...prev, saved]);
+      setPendingImage(null);
       setIsImageModalOpen(false);
       triggerToast('Image added!');
     } catch (err: unknown) {
@@ -1110,13 +1130,18 @@ export default function TeamDashboard() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <ImageIcon size={18} className="text-accent" />
               <h3 className="section-title">Promo Images</h3>
-              <span className="snippets-count-badge">{images.length}</span>
+              {!imagesFailed && (
+                <span className="snippets-count-badge">
+                  {images.length} of {MAX_IMAGES} used
+                </span>
+              )}
             </div>
 
             <button
               onClick={handleOpenAddImage}
               className="btn-primary btn-sm"
-              title="Add a promo image"
+              disabled={isImageLimitReached}
+              title={isImageLimitReached ? `Limit of ${MAX_IMAGES} images reached` : 'Add a promo image'}
             >
               <Plus size={14} />
               <span>Add Image</span>
@@ -1127,6 +1152,13 @@ export default function TeamDashboard() {
             <AlertCircle size={14} />
             <span>{IMAGE_DISCLAIMER}</span>
           </p>
+
+          {isImageLimitReached && (
+            <p className="load-error image-limit" role="status">
+              Your team has reached its limit of {MAX_IMAGES} images.{' '}
+              {isAdmin ? 'Delete one to add another.' : 'Ask a team admin to delete one to add another.'}
+            </p>
+          )}
 
           {images.length === 0 ? (
             <div className="snippets-empty-box">
@@ -1766,7 +1798,9 @@ export default function TeamDashboard() {
                 <ImageIcon size={22} className="text-accent" />
                 <div>
                   <h2 className="modal-title">Add Promo Image</h2>
-                  <p className="modal-subtitle">JPEG, PNG, or WebP, up to 5 MB.</p>
+                  <p className="modal-subtitle">
+                    JPEG, PNG, or WebP, up to 5 MB. Each team can have up to {MAX_IMAGES} images.
+                  </p>
                 </div>
               </div>
               <button
@@ -1791,6 +1825,7 @@ export default function TeamDashboard() {
                     maxLength={150}
                     value={imageTitle}
                     onChange={(e) => setImageTitle(e.target.value)}
+                    disabled={pendingImage !== null}
                     placeholder="e.g. Main Flyer, Spanish Flyer, Stage Photo..."
                     className="input-field"
                     autoFocus
@@ -1806,6 +1841,7 @@ export default function TeamDashboard() {
                     type="file"
                     accept={Object.keys(IMAGE_EXTENSIONS).join(',')}
                     onChange={handleSelectImageFile}
+                    disabled={pendingImage !== null}
                     className="input-field"
                   />
                 </div>
@@ -1845,7 +1881,7 @@ export default function TeamDashboard() {
                       <span>Uploading...</span>
                     </>
                   ) : (
-                    <span>Add Image</span>
+                    <span>{pendingImage ? 'Try Again' : 'Add Image'}</span>
                   )}
                 </button>
               </div>

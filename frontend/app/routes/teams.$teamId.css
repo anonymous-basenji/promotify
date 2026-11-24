@@ -715,6 +715,10 @@
   color: var(--accent-amber);
 }
 
+.image-limit {
+  margin-bottom: 14px;
+}
+
 .image-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr));

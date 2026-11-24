@@ -465,6 +465,11 @@ export const teamRepository = {
       .single();
 
     if (error) {
+      if (error.code === '23514' && error.message === 'Team image limit reached') {
+        const err = new Error('This team has reached its limit of 20 images. An admin can delete one to make room.');
+        (err as unknown as { status: number }).status = 409;
+        throw err;
+      }
       console.error('Error creating image:', error);
       throw new Error(error.message);
     }

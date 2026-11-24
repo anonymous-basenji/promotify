@@ -364,7 +364,7 @@ export const teamService = {
       throw err;
     }
 
-    // Uploads go straight to storage, so only accept a path in this team's folder
+    // The file is uploaded to this path afterward, so it must be in this team's folder
     const [folder, file, ...rest] = imagePath.split('/');
     if (folder !== teamId || rest.length > 0 || !/^[0-9a-f-]{36}\.(jpg|png|webp)$/.test(file ?? '')) {
       const err = new Error('Invalid image path');
