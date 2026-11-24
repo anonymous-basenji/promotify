@@ -43,6 +43,20 @@ const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const IMAGE_DISCLAIMER =
   "Images aren't private. Anyone with an image's link can view it, and photos may include location data. Don't upload anything confidential.";
 
+// Browsers only reliably accept PNG on the clipboard
+async function fetchAsPng(url: string): Promise<Blob> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Failed to load image');
+  const bitmap = await createImageBitmap(await response.blob());
+  const canvas = document.createElement('canvas');
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  canvas.getContext('2d')!.drawImage(bitmap, 0, 0);
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Failed to convert image'))), 'image/png');
+  });
+}
+
 export default function TeamDashboard() {
   const { teamId } = useParams<{ teamId: string }>();
   const { user, isLoading: isAuthLoading } = useAuth();
@@ -387,8 +401,29 @@ export default function TeamDashboard() {
     }
   };
 
+  const handleCopyImage = async (image: TeamImage) => {
+    try {
+      // Safari needs the write to start within the click, so pass the promise itself
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': fetchAsPng(image.image_url) }),
+      ]);
+      triggerToast(`"${image.title}" copied to clipboard!`);
+    } catch (err) {
+      console.error('Failed to copy image:', err);
+      triggerToast('Could not copy the image. Use Download instead.');
+    }
+  };
+
   const renderImageActions = (image: TeamImage) => (
     <>
+      <button
+        onClick={() => handleCopyImage(image)}
+        className="btn-primary btn-sm copy-btn"
+        title="Copy image to clipboard"
+      >
+        <Copy size={13} />
+        <span>Copy</span>
+      </button>
       <a
         href={image.image_url}
         target="_blank"
