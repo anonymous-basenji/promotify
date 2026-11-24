@@ -88,6 +88,8 @@ export const teamService = {
       throw err;
     }
 
+    // Files don't cascade, and RLS blocks removing them once the team is gone
+    await teamRepository.deleteImageFiles(teamId);
     await teamRepository.delete(teamId);
   },
 

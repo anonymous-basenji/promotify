@@ -110,7 +110,7 @@ export const teamRepository = {
   },
 
   async delete(teamId: string): Promise<void> {
-    // post_logs, facebook_groups, team_members and team_snippets cascade on team_id
+    // post_logs, facebook_groups, team_members, team_snippets and team_images cascade on team_id
     const { data, error } = await db()
       .from('teams')
       .delete()
@@ -514,6 +514,28 @@ export const teamRepository = {
     if (fileError) {
       console.error('Error deleting image file:', fileError);
       throw new Error(fileError.message);
+    }
+  },
+
+  async deleteImageFiles(teamId: string): Promise<void> {
+    const bucket = db().storage.from(IMAGE_BUCKET);
+
+    // list() returns at most 1000 files per call
+    while (true) {
+      const { data: files, error } = await bucket.list(teamId, { limit: 1000 });
+      if (error) {
+        console.error('Error listing team image files:', error);
+        throw new Error(error.message);
+      }
+      if (files.length === 0) return;
+
+      const { data: removed, error: removeError } = await bucket.remove(
+        files.map((f) => `${teamId}/${f.name}`)
+      );
+      if (removeError || removed.length === 0) {
+        console.error('Error deleting team image files:', removeError);
+        throw new Error(removeError?.message || 'Failed to delete team image files');
+      }
     }
   },
 };
