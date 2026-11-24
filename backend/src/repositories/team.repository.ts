@@ -438,6 +438,20 @@ export const teamRepository = {
     return (data || []).map(withImageUrl);
   },
 
+  async getImageById(imageId: string): Promise<TeamImage | null> {
+    const { data, error } = await db()
+      .from('team_images')
+      .select('*')
+      .eq('team_image_id', imageId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error getting image by id:', error);
+      throw new Error(error.message);
+    }
+    return data ? withImageUrl(data) : null;
+  },
+
   async createImage(imageData: {
     team_id: string;
     user_id: string;
@@ -455,5 +469,25 @@ export const teamRepository = {
       throw new Error(error.message);
     }
     return withImageUrl(data);
+  },
+
+  async updatePromoImage(teamId: string, imageId: string | null): Promise<void> {
+    const { data, error } = await db()
+      .from('teams')
+      .update({ promo_image_id: imageId, updated_at: new Date().toISOString() })
+      .eq('team_id', teamId)
+      .select('team_id');
+
+    if (error) {
+      console.error('Error updating main image:', error);
+      throw new Error(error.message);
+    }
+
+    // RLS silently skips rows it blocks
+    if (!data || data.length === 0) {
+      const err = new Error('Only team admins can change the main image');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
   },
 };

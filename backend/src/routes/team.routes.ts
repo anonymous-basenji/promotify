@@ -19,6 +19,7 @@ router.post('/:teamId/snippets', teamController.createSnippet);
 router.put('/:teamId/snippets/:snippetId', teamController.updateSnippet);
 router.delete('/:teamId/snippets/:snippetId', teamController.deleteSnippet);
 
+router.patch('/:teamId/promo-image', teamController.updatePromoImage);
 router.get('/:teamId/images', teamController.getImages);
 router.post('/:teamId/images', teamController.createImage);
 

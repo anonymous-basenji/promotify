@@ -377,4 +377,28 @@ export const teamService = {
       image_path: imagePath,
     });
   },
+
+  async updatePromoImage(
+    teamId: string,
+    imageId: string | null,
+    userId: string
+  ): Promise<void> {
+    const role = await teamRepository.getMemberRole(teamId, userId);
+    if (role !== 'owner' && role !== 'admin') {
+      const err = new Error('Only team admins can change the main image');
+      (err as unknown as { status: number }).status = 403;
+      throw err;
+    }
+
+    if (imageId) {
+      const image = await teamRepository.getImageById(imageId);
+      if (!image || image.team_id !== teamId) {
+        const err = new Error('Image not found');
+        (err as unknown as { status: number }).status = 404;
+        throw err;
+      }
+    }
+
+    await teamRepository.updatePromoImage(teamId, imageId);
+  },
 };

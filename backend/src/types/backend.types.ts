@@ -26,6 +26,7 @@ export interface Team {
   name: string;
   description?: string | null;
   promo_text: string;
+  promo_image_id: string | null;
   created_at: string;
   updated_at: string;
   user_role?: TeamRole;
