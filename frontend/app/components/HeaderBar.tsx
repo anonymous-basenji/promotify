@@ -49,7 +49,6 @@ export function HeaderBar({
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <h1 className="brand-title">Promotify One</h1>
-              <span className="brand-badge">BETA</span>
             </div>
             <p className="brand-subtitle">Team Promotional Distribution Matrix</p>
           </div>

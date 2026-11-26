@@ -59,6 +59,11 @@ async function fetchAsPng(url: string): Promise<Blob> {
   });
 }
 
+// A group is restricted if it can't be posted every day or has posting rules in its notes
+function isRestricted(group: FacebookGroup) {
+  return group.allowed_days.length < 7 || Boolean(group.notes && group.notes.trim());
+}
+
 export default function TeamDashboard() {
   const { teamId } = useParams<{ teamId: string }>();
   const { user, isLoading: isAuthLoading } = useAuth();
@@ -118,6 +123,7 @@ export default function TeamDashboard() {
 
   const [selectedFilter, setSelectedFilter] = useState<ViewFilter>('today');
   const [showRestrictedOnly, setShowRestrictedOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<'members' | 'restricted' | 'posted'>('members');
   const [searchQuery, setSearchQuery] = useState('');
 
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
@@ -825,15 +831,20 @@ export default function TeamDashboard() {
         if (!allowsDay) return false;
       }
 
-      if (showRestrictedOnly) {
-        const isRestricted = group.allowed_days.length < 7 || Boolean(group.notes && group.notes.trim());
-        if (!isRestricted) return false;
-      }
+      if (showRestrictedOnly && !isRestricted(group)) return false;
 
       return true;
     });
 
     return list.sort((a, b) => {
+      if (sortBy === 'restricted') {
+        const diff = Number(isRestricted(b)) - Number(isRestricted(a));
+        if (diff !== 0) return diff;
+      } else if (sortBy === 'posted') {
+        const diff = (postCounts[b.facebook_group_id] || 0) - (postCounts[a.facebook_group_id] || 0);
+        if (diff !== 0) return diff;
+      }
+
       const countA = a.member_count ?? -1;
       const countB = b.member_count ?? -1;
       if (countB !== countA) {
@@ -841,7 +852,7 @@ export default function TeamDashboard() {
       }
       return a.name.localeCompare(b.name);
     });
-  }, [groups, searchQuery, selectedFilter, activeDayName, showRestrictedOnly]);
+  }, [groups, searchQuery, selectedFilter, activeDayName, showRestrictedOnly, sortBy, postCounts]);
 
   const stats = useMemo(() => {
     const progressGroups =
@@ -1267,6 +1278,17 @@ export default function TeamDashboard() {
             </div>
 
             <div className="filter-options">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                className="select-field sort-select"
+                aria-label="Sort groups"
+              >
+                <option value="members">Most members</option>
+                <option value="restricted">Restrictions first</option>
+                <option value="posted">Most posted</option>
+              </select>
+
               <label className="toggle-label">
                 <input
                   type="checkbox"
