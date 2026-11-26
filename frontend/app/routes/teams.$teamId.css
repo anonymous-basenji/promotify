@@ -200,7 +200,14 @@
 .filter-options {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
+}
+
+.sort-select {
+  width: auto;
+  padding: 6px 10px;
+  font-size: 0.85rem;
 }
 
 .toggle-label {
