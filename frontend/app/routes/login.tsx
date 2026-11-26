@@ -43,7 +43,6 @@ export default function Login() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '12px' }}>
             <h1 className="login-title">Promotify One</h1>
-            <span className="brand-badge">BETA</span>
           </div>
           <p className="login-subtitle">
             Coordinate business campaign & festival promotions across Facebook groups with your team.
