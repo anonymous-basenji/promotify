@@ -844,13 +844,14 @@ export default function TeamDashboard() {
   }, [groups, searchQuery, selectedFilter, activeDayName, showRestrictedOnly]);
 
   const stats = useMemo(() => {
-    const activeDayGroups = groups.filter((g) => g.allowed_days.includes(activeDayName));
-    const postedCount = activeDayGroups.filter((g) => (todayPosts[g.facebook_group_id] || []).length > 0).length;
-    const totalCount = activeDayGroups.length;
+    const progressGroups =
+      selectedFilter === 'all' ? groups : groups.filter((g) => g.allowed_days.includes(activeDayName));
+    const postedCount = progressGroups.filter((g) => (todayPosts[g.facebook_group_id] || []).length > 0).length;
+    const totalCount = progressGroups.length;
     const progressPercent = totalCount > 0 ? Math.round((postedCount / totalCount) * 100) : 0;
 
     return { postedCount, totalCount, progressPercent };
-  }, [groups, todayPosts, activeDayName]);
+  }, [groups, todayPosts, selectedFilter, activeDayName]);
 
   if (isAuthLoading || (isLoadingDashboard && !team)) {
     return (
@@ -1294,24 +1295,26 @@ export default function TeamDashboard() {
             </div>
           </div>
 
-          {selectedFilter !== 'all' && (
-            <div className="progress-banner">
-              <div className="progress-info">
-                <span className="progress-label">
-                  {selectedFilter === 'today' ? "Today's Progress" : `${activeDayName}'s Progress`}
-                </span>
-                <span className="progress-counts">
-                  {stats.postedCount} of {stats.totalCount} groups posted ({stats.progressPercent}%)
-                </span>
-              </div>
-              <div className="progress-track">
-                <div
-                  className="progress-bar-fill"
-                  style={{ width: `${stats.progressPercent}%` }}
-                />
-              </div>
+          <div className="progress-banner">
+            <div className="progress-info">
+              <span className="progress-label">
+                {selectedFilter === 'today'
+                  ? "Today's Progress"
+                  : selectedFilter === 'all'
+                  ? 'All Groups Progress'
+                  : `${activeDayName}'s Progress`}
+              </span>
+              <span className="progress-counts">
+                {stats.postedCount} of {stats.totalCount} groups posted ({stats.progressPercent}%)
+              </span>
             </div>
-          )}
+            <div className="progress-track">
+              <div
+                className="progress-bar-fill"
+                style={{ width: `${stats.progressPercent}%` }}
+              />
+            </div>
+          </div>
         </section>
 
         <section className="groups-section">
@@ -1551,8 +1554,8 @@ export default function TeamDashboard() {
       </main>
 
       {isGroupModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsGroupModalOpen(false)}>
-          <div className="modal-content modal-md" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-backdrop">
+          <div className="modal-content modal-md">
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Sparkles size={22} className="text-accent" />
@@ -1688,8 +1691,8 @@ export default function TeamDashboard() {
       )}
 
       {isSettingsModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsSettingsModalOpen(false)}>
-          <div className="modal-content modal-md" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-backdrop">
+          <div className="modal-content modal-md">
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Edit3 size={22} className="text-accent" />
@@ -1791,8 +1794,8 @@ export default function TeamDashboard() {
       )}
 
       {isImageModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsImageModalOpen(false)}>
-          <div className="modal-content modal-md" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-backdrop">
+          <div className="modal-content modal-md">
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <ImageIcon size={22} className="text-accent" />
@@ -1891,8 +1894,8 @@ export default function TeamDashboard() {
       )}
 
       {isSnippetModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsSnippetModalOpen(false)}>
-          <div className="modal-content modal-md" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-backdrop">
+          <div className="modal-content modal-md">
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <FileText size={22} className="text-accent" />

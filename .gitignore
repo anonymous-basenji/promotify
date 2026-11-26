@@ -20,6 +20,7 @@ dist/
 Thumbs.db
 .vscode/
 .idea/
+.claude/
 
 # Android / Capacitor build artifacts
 frontend/android/.gradle/
