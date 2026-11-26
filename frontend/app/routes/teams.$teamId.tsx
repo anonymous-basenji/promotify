@@ -1554,8 +1554,8 @@ export default function TeamDashboard() {
       </main>
 
       {isGroupModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsGroupModalOpen(false)}>
-          <div className="modal-content modal-md" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-backdrop">
+          <div className="modal-content modal-md">
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Sparkles size={22} className="text-accent" />
@@ -1691,8 +1691,8 @@ export default function TeamDashboard() {
       )}
 
       {isSettingsModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsSettingsModalOpen(false)}>
-          <div className="modal-content modal-md" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-backdrop">
+          <div className="modal-content modal-md">
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Edit3 size={22} className="text-accent" />
@@ -1794,8 +1794,8 @@ export default function TeamDashboard() {
       )}
 
       {isImageModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsImageModalOpen(false)}>
-          <div className="modal-content modal-md" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-backdrop">
+          <div className="modal-content modal-md">
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <ImageIcon size={22} className="text-accent" />
@@ -1894,8 +1894,8 @@ export default function TeamDashboard() {
       )}
 
       {isSnippetModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsSnippetModalOpen(false)}>
-          <div className="modal-content modal-md" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-backdrop">
+          <div className="modal-content modal-md">
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <FileText size={22} className="text-accent" />

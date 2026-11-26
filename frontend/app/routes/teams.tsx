@@ -296,8 +296,8 @@ export default function Teams() {
       </main>
 
       {isCreateModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsCreateModalOpen(false)}>
-          <div className="modal-content modal-md" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-backdrop">
+          <div className="modal-content modal-md">
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Sparkles size={22} className="text-accent" />
@@ -378,8 +378,8 @@ export default function Teams() {
       )}
 
       {editingTeam && (
-        <div className="modal-backdrop" onClick={() => setEditingTeam(null)}>
-          <div className="modal-content modal-md" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-backdrop">
+          <div className="modal-content modal-md">
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Edit3 size={22} className="text-accent" />
